@@ -706,7 +706,7 @@ runningJob = new BatchHandler(batch);
       // load any other plugins specified on the command line
       String[] pluginsToLoad = line.getOptionValues('p');
       if(pluginsToLoad != null) {
-        Pattern mavenPluginPattern = Pattern.compile("[^/]+?:[^/]+?:[^/]+");
+        Pattern mavenPluginPattern = Pattern.compile("([^/]+?):([^/]+?):([^/]+)");
         for(String plugin : pluginsToLoad) {
           plugin = plugin.trim();
           try {
