@@ -12,6 +12,10 @@
       <outputDirectory>conf</outputDirectory>
     </fileSet>
     <fileSet>
+      <directory>src/assembly/gate-home</directory>
+      <outputDirectory>gate-home</outputDirectory>
+    </fileSet>
+    <fileSet>
       <directory>src/assembly/bin</directory>
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
