@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>uk.ac.gate</groupId>
+  <artifactId>gcp-impl</artifactId>
+  <packaging>jar</packaging>
+  <url>http://gate.ac.uk/gcp</url>
+
+  <parent>
+    <groupId>uk.ac.gate</groupId>
+    <artifactId>gcp-parent</artifactId>
+    <version>3.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <name>GCP implementation classes</name>
+  <description>
+  The main runtime classes for GCP.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>heritrix</id>
+      <name>Heritrix</name>
+      <url>http://builds.archive.org:8080/maven2/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>uk.ac.gate</groupId>
+      <artifactId>gcp-api</artifactId>
+      <version>3.0-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>3.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- Heritrix library for parsing ARC and WARC files -->
+    <dependency>
+      <groupId>org.archive.heritrix</groupId>
+      <artifactId>heritrix-commons</artifactId>
+      <version>3.1.1</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- JNA to extract process ID -->
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+      <version>4.0.0</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- commons-compress for compression formats (gz/bz2/etc) -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.9</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- mimir-connector for the Mimir output handler -->
+    <dependency>
+      <groupId>uk.ac.gate.mimir</groupId>
+      <artifactId>mimir-connector</artifactId>
+      <version>5.6-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!--
+    We should get this as a transitive of gate-core, but heritrix-commons also
+    declares a dependency on an earlier version, and Maven prefers this as it
+    is closer to the root of the dependency tree.
+    -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.4</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+</project>

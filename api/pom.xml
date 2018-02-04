@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>uk.ac.gate</groupId>
+  <artifactId>gcp-api</artifactId>
+  <packaging>jar</packaging>
+  <url>http://gate.ac.uk/gcp</url>
+
+  <parent>
+    <groupId>uk.ac.gate</groupId>
+    <artifactId>gcp-parent</artifactId>
+    <version>3.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <name>GCP public API</name>
+  <description>
+  The "public API" of GCP, including the input and output handler interfaces
+  and some abstract implementation and utility classes.  A GATE plugin that
+  wants to include input or output handler implementations should declare
+  a "provided" dependency on this library.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>gate.snapshots</id>
+      <name>GATE Snapshots Repository</name>
+      <url>https://repo.gate.ac.uk/content/repositories/snapshots</url>
+      <layout>default</layout>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>uk.ac.gate</groupId>
+      <artifactId>gate-core</artifactId>
+      <version>8.5-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>1.1.7.1</version>
+    </dependency>
+  </dependencies>
+</project>
