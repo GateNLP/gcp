@@ -23,6 +23,7 @@ import gate.cloud.io.StreamingInputHandler;
 import gate.cloud.util.CLibrary;
 import gate.cloud.util.Tools;
 import gate.cloud.util.XMLBatchParser;
+import gate.creole.Plugin;
 import gate.creole.ResourceInstantiationException;
 import gate.util.GateException;
 import gate.util.persistence.PersistenceManager;
@@ -30,6 +31,8 @@ import gate.util.persistence.PersistenceManager;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -41,6 +44,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -521,11 +526,14 @@ runningJob = new BatchHandler(batch);
     // GCP-CLI program or from the command line. 
     // The GCP-CLI way to invoke is "nthreads configfile" with no 
     // option flags while the command line invokation always includes
-    // requried option flags.
+    // requried option flags.  Both styles can use the -C and -p options
+    // to load additional plugins.
     // Options for the command line invokation
     // TODO: may be useful to be able to override the default user config and
     // session files here?
     options.addOption("b","batchFile",true,"Batch file (required, replaces -i, -o, -x, -r, -I)");
+    options.addOption("C","cache",true,"Maven cache directory to use when resolving plugins (optional, and may be specified more than once)");
+    options.addOption("p","plugin",true,"GATE plugin to pre-load. Values of the form groupId:artifactId:version are treated as Maven plugins, anything else is tried first as a URL and if that fails then as a path relative to the GCP working directory (optional, and may be specified more than once)");
     options.addOption("i","inputDirectoryOrFile",true,"Input directory or file listing document IDs (required, unless -b given)");
     options.addOption("f","outputFormat",true,"Output format, optional, one of 'xml'|'gatexml', 'finf', 'ser', 'json', default is 'finf'");
     options.addOption("o","outputDirectory",true,"Output directory (not output if missing)");
@@ -552,9 +560,10 @@ runningJob = new BatchHandler(batch);
       log.error("Could not parse command line arguments: "+ex.getMessage());
       System.exit(1);
     }
-    if(args.length == 2 && line.getArgs().length == 2) {
-      numThreads = Integer.parseInt(args[0]);
-      batchFile = new File(args[1]);
+    String[] nonOptionArgs = line.getArgs();
+    if(nonOptionArgs.length == 2) {
+      numThreads = Integer.parseInt(nonOptionArgs[0]);
+      batchFile = new File(nonOptionArgs[1]);
       if(!batchFile.exists()){
         log.error("The provided file (" + batchFile + ") does not exist!");
         System.exit(1);
@@ -657,10 +666,8 @@ runningJob = new BatchHandler(batch);
       File gcpGate = new File(gcpHome,"gate-home");
       if(System.getProperty("gate.home") != null) {
         gateHome = new File(System.getProperty("gate.home"));
-      } else {
-        gateHome = new File(gcpHome,"gate-home");
+        Gate.setGateHome(gateHome);
       }
-      Gate.setGateHome(gateHome);
       // use the site and user config files from gcp/gate-home even
       // if we are using another location for the actual GATE home
       // dir.
@@ -671,6 +678,15 @@ runningJob = new BatchHandler(batch);
       // This should never get created anyway since the user config
       // file we use disables the session file.
       Gate.setUserSessionFile(new File(gcpGate, "empty.session"));
+  
+      // Add any Maven caches specified on the command line
+      String[] cacheDirs = line.getOptionValues('C');
+      if(cacheDirs != null) {
+        for(String dir : cacheDirs) {
+          gate.util.maven.Utils.addCacheDirectory(new File(dir));
+        }
+      }
+
       Gate.init();
       
       // If we run from gcp-direct, we try to load the Format_FastInfoset plugin.
@@ -680,8 +696,43 @@ runningJob = new BatchHandler(batch);
       // is good because the application could 
       // still load the plugin later - with normal GCP, this would be the only way to use that format.      
       if(invokedByGcpCli == false) {
-        gate.Utils.loadPlugin("Format_FastInfoset");
+        try {
+          Gate.getCreoleRegister().registerPlugin(new Plugin.Maven("uk.ac.gate.plugins", "format-fastinfoset", gate.Main.version));
+        } catch(Exception e) {
+          log.warn("Couldn't load format-fastinfoset plugin, continuing anyway");
+        }
       }
+      
+      // load any other plugins specified on the command line
+      String[] pluginsToLoad = line.getOptionValues('p');
+      if(pluginsToLoad != null) {
+        Pattern mavenPluginPattern = Pattern.compile("[^/]+?:[^/]+?:[^/]+");
+        for(String plugin : pluginsToLoad) {
+          plugin = plugin.trim();
+          try {
+            Matcher m = mavenPluginPattern.matcher(plugin);
+            if(m.matches()) {
+              // this looks like a Maven plugin
+              log.info("Loading Maven plugin " + plugin);
+              Gate.getCreoleRegister().registerPlugin(new Plugin.Maven(m.group(1), m.group(2), m.group(3)));
+            } else {
+              try {
+                URL u = new URL(plugin);
+                // succeeded in parsing as a URL, load that
+                Gate.getCreoleRegister().registerPlugin(new Plugin.Directory(u));
+              } catch(MalformedURLException e) {
+                // not a URL, treat as a file
+                File pluginFile = new File(plugin);
+                Gate.getCreoleRegister().registerPlugin(new Plugin.Directory(pluginFile.toURI().toURL()));
+              }
+            }
+          } catch(Exception e) {
+            log.error("Failed to load plugin " + plugin, e);
+            System.exit(1);
+          }
+        }
+      }
+
       BatchRunner instance = new BatchRunner(numThreads);
 
       // depending on how we got invoked, create the batch from either 
