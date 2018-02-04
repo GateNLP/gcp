@@ -132,16 +132,18 @@ public abstract class AbstractOutputHandler implements OutputHandler {
 
   /**
    * Implementation of the 
-   * {@link gate.cloud.io.OutputHandler#outputDocument(gate.Document, java.lang.String)}
+   * {@link gate.cloud.io.OutputHandler#outputDocument(gate.Document, gate.cloud.batch.DocumentID)}
    * method that checks whether conditional output is enabled (see 
    * {@link IOConstants#PARAM_CONDITIONAL_SAVE_FEATURE_NAME}). If the save is
    * non conditional, or the condition is met, then it delegates the actual 
-   * save to the abstract {@link #outputDocumentImpl(Document, String)}
+   * save to the abstract {@link #outputDocumentImpl}
    * method, which subclasses must implement.
-   * @see gate.cloud.io.OutputHandler#outputDocument(gate.Document, java.lang.String)
+   * @see gate.cloud.io.OutputHandler#outputDocument(gate.Document, gate.cloud.batch.DocumentID)
    * 
    * @param document the document being sent for output.
    * @param documentId the ID of the document being output.
+   * @throws IOException if an I/O error occurs while outputting.
+   * @throws GateException if any other error occurs while outputting.
    */
   public final void outputDocument(Document document, DocumentID documentId)
     throws IOException, GateException {
@@ -155,11 +157,11 @@ public abstract class AbstractOutputHandler implements OutputHandler {
 
   /**
    * Abstract method that subclasses must implement to provide the function of
-   * {@link OutputHandler#outputDocument(Document, String)}. 
+   * {@link OutputHandler#outputDocument}. 
    * @param document the document being saved
    * @param documentId the ID for the saved document
-   * @throws IOException
-   * @throws GateException
+   * @throws IOException if an I/O error occurs while outputting.
+   * @throws GateException if any other error occurs while outputting.
    */
   protected abstract void outputDocumentImpl(Document document, 
       DocumentID documentId) throws IOException, GateException;

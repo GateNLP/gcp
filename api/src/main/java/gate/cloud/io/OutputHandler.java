@@ -55,7 +55,7 @@ public interface OutputHandler {
   /**
    * Sets the list of annotation set definitions for the annotations that need 
    * to be saved by this handler.
-   * @param annotationsToSave
+   * @param annotationsToSave the annotation set definitions from the batch descriptor.
    */
   public void setAnnSetDefinitions(List<AnnotationSetDefinition> annotationsToSave);
   
@@ -69,7 +69,9 @@ public interface OutputHandler {
   /**
    * Initialises this output handler. This method will always be called once by 
    * the client code, after the call to {@link #config(Map)} and before the 
-   * first call to {@link #ouputDocument()}. 
+   * first call to {@link #outputDocument}. 
+   * @throws IOException if an I/O error occurs during init.
+   * @throws GateException if any other error occurs during init.
    */
   public void init() throws IOException, GateException;
   
@@ -78,16 +80,16 @@ public interface OutputHandler {
    * from multiple threads, so implementations must be thread-safe!
    * @param document the document to be sent for output.
    * @param documentId the identifier for the document to be output 
-   * @throws IOException
-   * @throws GateException
+   * @throws IOException if an I/O error occurs during outputting.
+   * @throws GateException if any other error occurs during outputting.
    */
   public void outputDocument(Document document, DocumentID documentId) throws IOException, GateException;
   
   /**
    * Notifies this handler that all required documents have now been output, and
    * the handler is thus no longer required.
-   * @throws IOException
-   * @throws GateException
+   * @throws IOException if an I/O error occurs during close.
+   * @throws GateException if any other error occurs during close.
    */
   public void close()  throws IOException, GateException;
 }

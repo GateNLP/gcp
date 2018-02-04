@@ -27,14 +27,16 @@ public interface NamingStrategy {
    * configuration options.
    * @param isOutput is this strategy being used for input or output file names?
    * @param configData the configuration map.
+   * @throws IOException if an I/O error occurs during configuration.
+   * @throws GateException if any other error occurs during configuration.
    */
   public void config(boolean isOutput, Map<String, String> configData) throws IOException, GateException;
   
   /**
    * Calculates the file corresponding to a given ID. 
    * @param id
-   * @return
-   * @throws IOException 
+   * @return the File that corresponds to the given ID in this strategy.
+   * @throws IOException if an exception occurs in this mapping process.
    */
   public File toFile(DocumentID id) throws IOException;
 }

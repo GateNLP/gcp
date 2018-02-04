@@ -36,21 +36,27 @@ public interface InputHandler {
   /**
    * Configures this input handler by providing a {@link Map} containing 
    * configuration options. 
-   * @param configData
+   * @param configData the configuration data from the batch descriptor.
+   * @throws IOException if an I/O error occurs during configuration.
+   * @throws GateException if any other error occurs during configuration.
    */
   public void config(Map<String, String> configData) throws IOException, GateException;
   
   /**
    * Initialises this input handler. This method will always be called once by 
    * the client code, before the first call to 
-   * {@link #getInputDocument(String)}. 
+   * {@link #getInputDocument(DocumentID)}. 
+   * @throws IOException if an I/O error occurs during init.
+   * @throws GateException if any other error occurs during init.
    */
   public void init() throws IOException, GateException;
   
   /**
    * Called once processing is complete to allow the handler to release
    * any resources it is using.  After this method is called there will
-   * be no more calls to {@link #getInputDocument(String)}.
+   * be no more calls to {@link #getInputDocument(DocumentID)}.
+   * @throws IOException if an I/O error occurs during the close process.
+   * @throws GateException if any other error occurs during the close process.
    */
   public void close() throws IOException, GateException;
   

@@ -268,7 +268,7 @@ public class Batch {
   /**
    * Gets the {@link File} object denoting the file where the processing report
    * will be written.
-   * @return
+   * @return the report file.
    */
   public File getReportFile() {
     return reportFile;
@@ -277,6 +277,8 @@ public class Batch {
   /**
    * Sets the {@link File} object denoting the file where the processing report
    * will be written.
+   *
+   * @param reportFile the file to which the report should be written.
    */
   public void setReportFile(File reportFile) {
     this.reportFile = reportFile;
@@ -284,7 +286,7 @@ public class Batch {
 
   /**
    * Gets the list of output handlers for this batch.
-   * @return
+   * @return the batch output handlers.
    */
   public List<OutputHandler> getOutputHandlers() {
     return outputHandlers;
@@ -292,6 +294,8 @@ public class Batch {
 
   /**
    * Sets the list of output handlers for this batch.
+   *
+   * @param outputHandlers output handlers for this batch.
    */  
   public void setOutputHandlers(List<OutputHandler> outputHandlers) {
     this.outputHandlers = outputHandlers;
@@ -325,9 +329,10 @@ public class Batch {
   }
 
   /**
-   * Sets the file object pointing to the GATE application to be executed by 
-   * this batch. 
-   * @param appFile
+   * Sets the initial GATE application that this batch will run. The app will
+   * be duplicated by the document processor. 
+   *
+   * @param app the template application for this batch.
    */
   public void setGateApplication(CorpusController app) {
     this.gateApplication = app;
@@ -343,6 +348,8 @@ public class Batch {
 
   /**
    * Sets the input handler used by this batch.
+   *
+   * @param inputHandler the handler that provides documents for this batch.
    */
   public void setInputHandler(InputHandler inputHandler) {
     this.inputHandler = inputHandler;

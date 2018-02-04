@@ -81,20 +81,8 @@ public abstract class AbstractFileOutputHandler extends AbstractOutputHandler {
   /**
    * Utility method for subclasses that provides an open output stream that can
    * be used to write data to a file. The file to be written is determined from
-   * the {@link #documentRoot}, the <code>docId</code> parameter, and the
-   * <code>extension</code> parameter, following the following rules:
-   * <ul>
-   * <li>the file will be a descendant of the directory denoted by
-   * <code>baseDirectory</code></li>
-   * <li>the <code>docId</code> string is treated as a &quot;/&quot;-separated
-   * path, inside the base directory, with the last element being the file name.
-   * </li>
-   * <li>if the <code>extension</code> parameter is <code>null</code>, then the
-   * value of the <code>fileExtension<code> field (obtained from the 
-   *  handler configuration) is used instead.</li>
-   * <li>if the <code>extension</code> value is non-<code>null</code> , then
-   * that value is appended to the file name.</li>
-   * </ul>
+   * the <code>docId</code> parameter, and the configured {@link
+   * NamingStrategy} for this handler.
    * The file thus identified is then opened for writing. If the
    * <code>compression</code> field is set to a supported compression algorithm,
    * then the file output stream is wrapped into an output stream that performs
@@ -103,10 +91,6 @@ public abstract class AbstractFileOutputHandler extends AbstractOutputHandler {
    * 
    * @param docId
    *          the identifier for the document
-   * @param extension
-   *          the file extension to be used. Supply an empty string value to
-   *          suppress extension, or <code>null</code> to use the default value
-   *          (obtained from the configuration data of this handler).
    * @return an output stream to which data can be written.
    */
   protected OutputStream getFileOutputStream(DocumentID docId)
