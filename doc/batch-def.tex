@@ -1,0 +1,714 @@
+\section{The Structure of a Batch Descriptor}
+
+GCP batches are defined by an XML file whose format is as follows.  The root
+element defines the batch identifier:
+\begin{lstlisting}[language=XML]
+<batch id="batch-id" xmlns="http://gate.ac.uk/ns/cloud/batch/1.0">
+\end{lstlisting}
+
+The children of this \verb!<batch>! element are:
+\bde
+\item[application] (required) specifies the location of the saved GATE
+  application state. \verb!<application file="../annie.xgapp"/>!
+
+\item[report] (required) specifies the location of the XML report file.  If the
+  report file already exists GCP will read it and process only those documents
+  that have not already been processed successfully.
+  \verb!<report file="../report.xml" />!
+
+\item[input] (required) specifies the input handler which will be the source of
+  documents to process.  Most handlers load documents one by one based on their
+  IDs, but certain handlers operate in a \emph{streaming} mode, processing a
+  block of documents in one pass.
+
+\item[output] (zero or more) specified what to do with the documents once they
+  have been processed.
+
+\item[documents] (required, except when using a streaming input handler)
+  specifies the document IDs to be processed, as any combination of the child
+  elements:
+  \bde
+  \item[id] a single document ID. \verb!<id>bbc/article001.html</id>!
+  \item[documentEnumerator] an enumerator that generates a list of IDs.  The
+    enumerator implementation chosen will typically depend on the specific type
+    of input handler that the batch uses.
+  \ede
+\ede
+
+The following example shows a simple XML batch definition file which runs ANNIE
+and saves the results as GATE XML format.  The input, output and documents
+elements are discussed in more detail in the following sections.
+
+\begin{lstlisting}[language=XML, escapeinside={~}{~}]
+<?xml version="1.0" encoding="UTF-8"?>
+<batch id="sample" xmlns="http://gate.ac.uk/ns/cloud/batch/1.0">
+  ~\label{lst:sample:app}~<application file="../annie.xgapp"/>
+
+  ~\label{lst:sample:report}~<report file="../reports/sample-report.xml" />
+
+  ~\label{lst:sample:input-start}~<input dir="../input-files"
+         mimeType="text/html"
+         compression="none"
+         encoding="UTF-8"
+  ~\label{lst:sample:input-end}~       class="gate.cloud.io.file.FileInputHandler" />
+
+  ~\label{lst:sample:output-start}~<output dir="../output-files-gate"
+          compression="gzip"
+          encoding="UTF-8"
+          fileExtension=".GATE.xml.gz"
+  ~\label{lst:sample:output-end}~        class="gate.cloud.io.file.GATEStandOffFileOutputHandler" />
+
+  ~\label{lst:sample:documents}~<documents>
+    <id>ft/03082001.html</id>
+    <id>gu/04082001.html</id>
+    <id>in/09082001.html</id>
+  </documents>
+</batch>
+\end{lstlisting}
+
+It is important to note that all relative file paths specified in a batch
+descriptor are resolved against the location of the descriptor file itself,
+thus if this descriptor file were located at
+\verb!/data/gcp/batches/sample.xml! then it would load the application from
+\verb!/data/gcp/annie.xgapp!.
+
+
+\section{Specifying the Input Handler}
+
+Each batch definition must include a single \verb!<input>! element defining the
+source of documents to be processed.  Given a document ID, the job of the input
+handler is to locate the identified document and load it as a
+\verb!gate.Document! to be processed by the application.  Note that the input
+handler describes how to find the document for each ID but does {\em not}
+define which IDs are to be processed, that is the job of the \verb!<documents>!
+element below.
+
+The \verb!<input>!  element must have a \verb!class! attribute specifying the
+name of the Java class implementing the handler.  GCP will create an instance
+of this class and pass the remaining \verb!<input>! attributes to the handler
+to allow it to configure itself.  Thus, which attributes are supported and/or
+required depends on the specific handler class.
+
+GCP provides four standard input handler types:
+
+\bit
+\item \verb!gate.cloud.io.file.FileInputHandler! to read documents from
+  individual files on the filesystem
+\item \verb!gate.cloud.io.zip.ZipInputHandler! to read documents directly from
+  a ZIP archive
+\item \verb!gate.cloud.io.arc.ARCInputHandler! and
+  \verb!gate.cloud.io.arc.WARCInputHandler! to read documents from an ARC or
+  WARC archive as produced by the Heritrix web crawler
+  (\url{http://crawler.archive.org}).
+\eit
+
+and one \emph{streaming} handler:
+
+\bit
+\item \verb!gate.cloud.io.json.JSONStreamingInputHandler! to read a stream of
+  documents from a single large JSON file (for example a collection of Tweets
+  from Twitter's streaming API).
+\eit
+
+\subsection{The {\tt FileInputHandler}}
+
+\verb!FileInputHandler! reads documents from individual files on the
+filesystem.  It can read any document format supported by GATE Embedded, and in
+addition it can read files that are GZIP compressed, unpacking them on the fly
+as they are loaded.  It supports the following attributes on the \verb!<input>!
+element in the batch descriptor:
+
+\bde
+\item[encoding] (optional) The character encoding that should be used to read
+  the documents (i.e. the value for the encoding parameter when creating a
+  \verb!DocumentImpl! using the GATE Factory).  If omitted, the default GATE
+  Embedded behaviour applies, i.e. the platform default encoding is used.
+\item[mimeType] (optional) The MIME type that should be assumed when creating
+  the document (i.e. the value of the \verb!DocumentImpl! mimeType parameter).
+  If omitted GATE Embedded will attempt to guess the appropriate MIME type for
+  each document in the usual way, based on the file name extension and magic
+  number tests.
+\item[compression] (optional) The compression that has been applied to the
+  files, either ``none'' (the default) or ``gzip''.
+\ede
+
+The actual mapping from document IDs to file locations is controlled by a
+{\em naming strategy}, another Java object which is configured from the
+\verb!<input>! attributes.  The default naming strategy
+({\tt gate.cloud.io.file.SimpleNamingStrategy}) treats the document ID as a
+relative path\footnote{Technically a relative {\em URI}, so forward slashes
+must be used in document IDs even when running on Windows where file paths
+normally use backslashes.}, and takes the following attributes:
+
+\bde
+\item[dir] (required) The base directory under which documents are found.
+\item[fileExtension] (optional) A file extension to append to the document ID.
+\ede
+
+Given a document ID such as ``ft/03082001'', a base directory of ``/data'' and
+a file extension of ``.html'' the \verb!SimpleNamingStrategy! would load the
+file ``/data/ft/03082001.html''
+
+To use a different naming strategy implementation, specify the Java class name
+of the custom strategy class as the \verb!namingStrategy! attribute of the
+\verb!<input>! element, along with any other attributes the strategy requires
+to configure it.
+
+\subsection{The {\tt ZipInputHandler}}
+
+The ZIP input handler reads documents directly out of a ZIP archive, and is
+configured in a similar way to the file-based handler.  It supports the
+following attributes:
+
+\bde
+\item[encoding] (optional) exactly as for \verb!FileInputHandler!
+\item[mimeType] (optional) exactly as for \verb!FileInputHandler!
+\item[srcFile] (required) The location of the ZIP file from which documents
+  will be read. This parameter was previously named ``zipFile'', the old name
+  is supported for backwards compatibility but not recommended for new batches.
+\item[fileNameEncoding] (optional) The default character encoding to assume for
+  file names inside the ZIP file.  This attribute is only relevant if the ZIP
+  file contains files whose names contain non-ASCII characters {\em without}
+  the ``language encoding flag'' or ``Unicode extra fields'', and can be
+  omitted if this does not apply.  There is a detailed discussion on file name
+  encodings in ZIP files in the Ant manual
+  (\url{http://ant.apache.org/manual/Tasks/zip.html#encoding}), but the rule of
+  thumb is that if the ZIP file was created using Windows ``compressed
+  folders'' then \verb!fileNameEncoding!  should be set to match the encoding
+  of the machine that created the ZIP file, otherwise the correct value is
+  probably ``Cp437'' or ``UTF-8''.
+\ede
+
+The ZIP input handler does not use pluggable naming strategies, and simply
+assumes that the document ID is the path of an entry in the ZIP file.
+
+\subsection{The {\tt ARCInputHandler} and {\tt WARCInputHandler}}
+\label{sec:batch-def:arc}
+
+These two input handlers read documents out of ARC- and WARC format web archive
+files as produced by the Heritrix web crawler and other similar tools.  They
+support the following attributes:
+
+\bde
+\item[srcFile] (optional) The location of the archive file\footnote{For ARC,
+  this parameter was previously called ``arcFile'', the old name is supported
+  for backwards compatibility but not recommended for new batches.}.  These
+  input handlers can operate in one of two modes -- if \verb!srcFile! \emph{is}
+  specified then the handler will load records from this specific archive file
+  on disk, but if \verb!srcFile! is \emph{not} specified then each document ID
+  must provide a fully qualified http or https URL to an archive.  In the
+  second mode the selected records will be downloaded individually using ``byte
+  range'' HTTP requests.
+\item[defaultEncoding] (optional) The {\em default} character encoding to
+  assume for entries that do not specify their encoding in the entry
+  headers.  If an entry specifies its own encoding explicitly this will be
+  used.  If this attribute is omitted, ``Windows-1252'' is assumed as the
+  default.
+\item[mimeType] (optional) The MIME type that should be assumed when creating
+  the document (i.e. the value of the \verb!DocumentImpl! mimeType parameter).
+  If omitted, the usual GATE Embedded heuristics will apply.  The input
+  handlers make the HTTP headers from the archive entry available to GATE as if
+  the document had been downloaded directly from the web, so the
+  \verb!Content-Type! header from the archive entry is available to these
+  heuristics.
+\ede
+
+The web archive input handlers expect document IDs of the following form:
+\begin{lstlisting}[language=XML]
+<id recordPosition="NNN" [url="optional url of archive"]
+    recordOffset="NNN" recordLength="NNN">{original entry url}</id>
+\end{lstlisting}
+
+The content of the \verb!id! element should be the original URL from which the
+entry was crawled, and the attributes are:
+\bde
+\item[recordPosition] a numeric value that
+ is used as a sequence number. If the IDs are generated by the corresponding
+ enumerator (see below), then the this attribute will contain the actual
+ record position inside the archive file.
+\item[recordOffset and recordLength] the byte offset of the required record in
+  the archive, and the record's length in bytes.
+\item[url] (optional) a full HTTP or HTTPS URL to the source archive file.  If
+  this is provided, GCP will download just the specific target record using a
+  ``Range'' header on the HTTP request, rather than loading the record from the
+  input handler's usual \verb!srcFile!.
+\ede
+
+The standard enumerator implementations (see below) create IDs in the correct
+form.
+
+The ARC input handler adds all the HTTP headers and archive record headers for
+the entry as features on the GATE \verb!Document! it creates.  HTTP header
+names are prefixed with ``http\_header\_'' and ARC/WARC record headers with
+``arc\_header\_''.
+
+\subsection{The streaming JSON input handler}
+\label{sec:batch-def:json-input}
+
+An increasing number of services, most notably Twitter and social media
+aggregators such as DataSift, provide their data in JSON format.  Twitter
+offers streaming APIs that deliver Tweets as a continuous stream of JSON
+objects concatenated together, DataSift typically delivers a large JSON array
+of documents.  The streaming JSON input handler can process either format,
+treating each JSON object in the ``stream'' as a separate GATE document.
+
+The \verb!gate.cloud.io.json.JSONStreamingInputHandler! accepts the following
+attributes:
+
+\bde
+\item[srcFile] the file containing the JSON objects (either as a top-level
+  array or simply concatenated together, optionally separated by whitespace).
+\item[idPointer] the ``path'' within each JSON object of the property that
+  represents the document identifier.  This is an expression in the \emph{JSON
+  Pointer}\footnote{\url{http://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-03}}
+  language.  It must start with a forward slash and then a sequence of property
+  names separated by further slashes.  A suitable value for the Twitter JSON
+  format would be \verb!/id_str! (the property named ``\verb!id_str!'' of the
+  object), and for DataSift \verb!/interaction/id! (the top-level object has an
+  ``interaction'' property whose value is an object, we want the ``id''
+  property of \emph{that} object).  Any object that does not have a property at
+  the specified path will be ignored.
+\item[compression] (optional) the compression format used by the
+  \verb!srcFile!, if any.  If the value is ``none'' (the default) then the file
+  is assumed not to be compressed, if the value is one of the compression formats
+  supported by Apache Commons Compress (``gz''\footnote{For backwards
+  compatibility, ``gzip'' is treated as an alias for ``gz''}, ``bzip2'',
+  ``xz'', ``lzma'', ``snappy-raw'', ``snappy-framed'', ``pack200'', ``z'') then 
+  it will be unpacked using that library.  If the value is ``any'' then the
+  handler uses the auto-detection capabilities of Commons Compress to attempt
+  to detect the appropriate compression format.  Any other value is taken to be
+  the command line for a native decompression program that expects compressed
+  data on stdin and will produce decompressed data on stdout, for example
+  \verb!"lzop -dc"!.
+\item[mimeType] (optional but highly recommended) the value to pass as the
+  ``mimeType'' parameter when creating a GATE Document from the JSON string.
+  This will be used by GATE to select an appropriate document format parser, so
+  for Twitter JSON you should use \verb!"text/x-json-twitter"! and for DataSift
+  \verb!"text/x-json-datasift"!.  Note that the GATE plugin defining the
+  relevant format parser \emph{must} be loaded as part of your GATE
+  application.
+\ede
+
+This is a streaming handler -- it will process all documents in the JSON bundle
+and does \emph{not} require a \verb!documents! section in the batch
+specification.  As with other input handlers, when restarting a failed batch
+documents that were successfully processed in the previous run will be skipped.
+
+\section{Specifying the Output Handlers}
+
+Output handlers are responsible for taking the GATE Documents that have been
+processed by the application and doing something with the results.  GCP
+supplies a number of standard output handlers to save the document text and
+annotations to files in various formats, and also a handler to send the
+annotated documents to a remote M\'{i}mir server for indexing.
+
+Most batches would specify at least one output handler but GCP does support
+batches with no outputs (if, for example, the application itself contains a PR
+responsible for outputting results).
+
+Output handlers are specified using \verb!<output>! elements in the batch
+definition, and like input handlers these require a \verb!class! attribute
+specifying the implementing Java class name.  Other attributes are passed to
+the instantiated handler object to allow it to configure itself.
+
+By default, an output handler will save all annotations from all annotation
+sets in each document.  A given output handler may be configured to save only a
+subset of the annotations by providing \verb!<annotationSet>! sub-elements
+inside the \verb!<output>! element, for example
+
+\begin{lstlisting}[language=XML, escapeinside={~}{~}]
+<annotationSet name="ANNIE">
+  <annotationType name="Person" />
+  <annotationType name="Location" />
+</annotationSet>
+
+~\label{lst:annsets:default}~<annotationSet />
+\end{lstlisting}
+
+The \verb!<annotationSet>! element may have a \verb!name! attribute giving the
+annotation set name (if omitted the default annotation set is used), and zero
+or more \verb!<annotationType>! sub-elements giving the annotation types to
+extract from that set (if no \verb!<annotationType>! elements are provided, all
+annotation from the set are saved, so line~\ref{lst:annsets:default} specifies
+that the handler should save all annotations from the default set).
+
+Note that these filters are provided as a convenience, and some output handler
+implementations may ignore them.  For example the M\'{i}mir output handler
+always sends the complete Document to the M\'{i}mir server, regardless of the
+filters specified.
+
+\subsection{File-based Output Handlers}\label{sec:batch-def:file-output-handlers}
+
+GCP provides a set of six standard file-based output handlers to save data to
+files on the filesystem in various formats.
+
+\bit
+\item \verb!gate.cloud.io.file.GATEStandOffFileOutputHandler! to save documents
+  in the GATE XML format (``save as XML'' in GATE Developer).
+\item \verb!gate.cloud.io.file.GATEInlineOutputHandler! to save documents with
+  inline XML tags for their annotations (``save preserving format'' in GATE
+  Developer).
+\item \verb!gate.cloud.io.file.PlainTextOutputHandler! to save just the text
+  content of the document.  This is rarely useful on its own but is frequently
+  used in conjunction with
+\item \verb!gate.cloud.io.xces.XCESOutputHandler! to save annotations in the
+  XCES standoff format.  Annotation offsets in XCES refer to the plain text as
+  saved by a \verb!PlainTextOutputHandler!.
+\item \verb!gate.cloud.io.file.JSONOutputHandler! to save documents in a JSON
+  format modelled on that used by Twitter to represent ``entities'' in Tweets.
+\item \verb!gate.cloud.io.json.JSONStreamingOutputHandler! saves documents in
+  the same JSON format as the previous handler, but concatenated together in
+  one or more output batches rather than saving each document in its own
+  individual output file.
+\item \verb!gate.cloud.io.file.SerializedObjectOutputHandler! to save documents
+  using Java's built in \emph{object serialization} protocol (with optional
+  compression).  This handler ignores annotation filters, and always writes
+  the complete document.  This is the same mechanism used by GATE's
+  \verb!SerialDataStore!.
+\eit
+
+The handlers share the following \verb!<output>! attributes:
+
+\bde
+\item[encoding] (optional, not applicable to
+  \verb!SerializedObjectOutputHandler!) The character encoding used when
+  writing files.  If omitted, ``UTF-8'' is the default.
+\item[compression] (optional) The compression algorithm to apply to the saved
+  files.  Can be either ``none'' (no compression, the default) or ``gzip''
+  (GZIP compression).
+\ede
+
+As with the file-based input handler, these output handlers use a {\em naming
+strategy} to map from document IDs to output file names.  The default strategy
+is the same \verb!SimpleNamingStrategy! configured with a base \verb!dir! and a
+\verb!fileExtension!, treating the document ID as a path relative to the given
+directory and appending the given extension. If the \verb!replaceExtension! parameter
+is set to \verb!"true"! then the \verb!fileExtension!, if specified, replaces
+any existing file extension of the intput path.
+
+This is appropriate when using a
+file or ZIP input handler but for batches that use an \verb!ARCInputHandler! a
+different strategy is required.
+
+As document IDs for an \verb!ARCInputHandler! are based on URLs the simple
+strategy would try to put the output files into directories named after
+absolute URLs, which can include characters that are not permitted in file
+names on all platforms.  An alternative strategy is provided that makes use of
+the \verb!recordPosition! attribute on the IDs to put output files into a
+hierarchy of numbered directories.  To use this strategy, specify an attribute
+\verb!namingStrategy="gate.cloud.io.arc.ARCDocumentNamingStrategy"!, and the
+usual \verb!dir! and \verb!fileExtension! attributes of the default strategy.
+The ARC strategy also accepts an optional additional attribute \verb!pattern!
+defining the pattern to use to map the ID number to a directory.
+
+The default pattern is ``3/3'', which will left-pad the \verb!recordPosition!
+to a minimum of 6 digits and then create one level of directories from the
+first three digits and use the last three as part of the file name\footnote{In
+fact the pattern is processed from right to left, so any surplus digits end up
+in the first place, i.e. the ID 1234567 becomes 1234/567 rather than
+123/4567.}.  The ID text (i.e. the original URL) is cleaned up to remove the
+protocol, query string and fragment (if any) and replace slash and colon
+characters with underscores (so the resulting file name will not include any
+more levels of subdirectories) and appended to the numeric part following an
+underscore.  For full details of this process, see the JavaDoc
+documentation.  As an example, the ID with \verb!recordPosition="1"! and URL
+\verb!http://example.com/file.html! with the default pattern of ``3/3'' would
+map to the target path ``000/001\_example.com\_file.html'', and this
+would then be combined with the \verb!dir! and \verb!fileExtension! to produce
+the final file name.
+
+The \verb!PlainTextOutputHandler! simply saves the plain text of the GATE
+document with no annotations (so \verb!<annotationSet>! filters are ignored).
+The \verb!GATEStandOffFileOutputHandler! writes the document text and selected
+annotations in the standard ``save as XML'' GATE XML format.  The
+\verb!XCESOutputHandler! saves the selected annotations as XCES XML format.
+
+The \verb!GATEInlineOutputHandler! saves the document text plus selected
+annotations as inline XML tags as produced by ``save preserving format'' in
+GATE Developer.  This handler supports one additional \verb!<output>! attribute
+named \verb!includeFeatures! -- if this is set to ``true'', ``yes'' or ``on''
+then the annotation features will be included as attributes on the XML tags,
+otherwise (including if the attribute is omitted) it will save just the tags
+with no attributes.
+
+The \verb!JSONOutputHandler! saves the document in a JSON format modelled on
+that used by Twitter to represent entities in Tweets.  This is a JSON object
+with two properties, ``text'' holding the plain text of the document and
+``entities'' holding the annotations.  The ``entities'' value is itself an
+object mapping a ``label'' to an array of annotations.
+%
+\begin{verbatim}
+{
+  "text":"The text of the document",
+  "entities":{
+    "Person":[
+      {
+        "indices":[start,end],
+        "feature1":"value1",
+        "feature2":"value2"
+      },
+      {
+        "indices":[start,end],
+        "feature1":"value1",
+        "feature2":"value2"
+      }
+    ]
+  }
+}
+\end{verbatim}
+
+For each annotation the ``indices'' property gives the start and end offsets of
+the annotation as character offsets into the ``text'', and the other properties
+of the object represent the features of the annotation.
+
+This handler supports a number of additional \verb!<output>! attributes to
+control the format.
+
+\bde
+\item[groupEntitiesBy] controls how the annotations are grouped under the
+  ``entities'' object.  Permitted values are ``type'' (the default) or ``set''.
+  Grouping by ``type'' produces output like the example above, with one entry
+  under ``entities'' for each annotation type containing all annotations of
+  that type from across all annotation sets that were selected by the
+  \verb!<annotationSet>! filters.  Conversely, grouping by ``set'' creates one
+  entry under ``entities'' for each annotation set name (with the name
+  ``default'' used for the default annotation set -- technically JSON
+  permits the empty string as a property name but this is likely to cause
+  problems for some consumer libraries), containing all the annotations in
+  that set that were selected by the filters, regardless of type.  Grouping by
+  ``set'' will often be used in combination with the ``annotationTypeProperty''
+  attribute.
+
+\item[annotationTypeProperty] if set, the type of each annotation is added to
+  the output as this property (i.e. treated as if it were an additional feature
+  of the annotation).  This is useful in combination with
+  \verb!groupEntitiesBy="set"! when different types of annotation are grouped
+  under a single label.
+
+\item[documentAnnotationASName] the annotation set in which to search for a
+  \emph{document annotation} (see below).  If omitted, the default set is used.
+\item[documentAnnotationType] if specified, the output handler will look for a
+  single annotation of this type within the specified annotation set and assume
+  that this annotation spans the ``interesting'' portion of the document.  Only
+  the text and annotations covered by this annotation will be output, and
+  furthermore the features of the document annotation will be added as
+  top-level properties (alongside ``text'' and ``entities'') of the generated
+  JSON object.  This option is intended to support round-trip processing of
+  documents that were originally loaded from JSON by GATE's Twitter support.
+\ede
+
+The \verb!JSONStreamingOutputHandler! writes the same JSON format, but instead
+of storing each GATE document in its own individual file on disk, this handler
+creates one large file (or several ``chunks'') and writes documents to this
+file in one stream, separated by newlines.  In addition to the parameters
+described above this handler adds two further parameters:
+
+\bde
+\item[pattern] (optional, default \verb!part-%03d!) the pattern on which chunk
+  file names should be created.  This is a standard Java \verb!String.format!
+  pattern string which will be instantiated with a single integer parameter, so
+  should include a single \verb!%d!-based placeholder.  Output file names are
+  generated by instantiating the pattern with successive numbers starting from
+  0 and passing the result to the configured naming strategy until a file name
+  is found that does not already exist.  With the default naming strategy this
+  effectively means \verb!{dir}/{pattern}{fileExtension}!, e.g.
+  \verb!output/part-003.json.gz!
+\item[chunkSize] (optional, default \verb!99000000!) approximate maximum size
+  in bytes of a single output file, after which the handler will close the
+  current file and start the next chunk.  The file size is checked after every MB
+  of uncompressed data, so each chunk should be no more than 1MB larger than the
+  configured chunk size.  The default chunkSize is 99 million bytes, which
+  should produce chunks of no more than 100MB.
+\ede
+
+This handler, like the \verb!JSONStreamingInputHandler! can cope with a wider
+variety of compression formats than the standard one-file-per-document output
+handlers.  A value other than ``none'' or ``gzip'' for the ``compression''
+parameter will be taken as the command line for a native compression program
+that expects raw data on its stdin and produces compressed data on stdout, for
+example \verb!"bzip2"! or \verb!"lzop"! (with the default naming strategy, the
+configured fileExtension should take the compression format into account, e.g.
+\verb!".json.lzo"!).
+
+\subsection{The M\'{i}mir Output Handler}
+
+GCP also provides \verb!gate.cloud.io.mimir.MimirOutputHandler! to send annotated documents to a M\'{i}mir server for indexing.  This handler supports the following \verb!<output>! attributes:
+
+\bde
+\item[indexUrl] (required) the {\em index URL} of the target index.  See the
+  M\'{i}mir documentation for details.
+\item[uriFeature] (optional) M\'{i}mir requires a URI to identify each
+  document.  This attribute tells GCP that the URI for a document should be
+  taken from the document feature with this name.
+\item[namespace] (optional) if \verb!uriFeature! is not specified GCP will
+  construct a suitable URI by appending the document ID to a fixed
+  ``namespace'' string.  If omitted an empty namespace will be used (i.e. the
+  URI passed to M\'{i}mir will be just the document ID).
+\item[username] (optional) HTTP basic authentication username to pass to the
+  M\'{i}mir index.  If omitted, no authentication token will be passed.
+\item[password] (required if and only if username is specified) the
+  corresponding basic authentication password.
+\item[connectionInterval] the default behaviour of the M\'{i}mir output handler
+  is to open a new connection for each document. When processing very short
+  documents, such as tweets, or paper abstracts, using many parallel threads, 
+  it is possible that new connections will be opened several hundred times a
+  second. This has the potential to overload the receiving M\'{i}mir server, or
+  to trigger some security measures, leading to refused connections. To avoid 
+  this, the output handler can be configured to accumulate the processed 
+  documents in memory, and only connect to the remote server from time to time, 
+  sending all the pending documents each time. To enable this functionality, set 
+  the value for the {\tt connectionInterval} to a positive value representing 
+  the number of milliseconds between connections. For example, a setting of 
+  {\tt 1000} means that a new connection will be opened every second.
+\ede
+
+This handler ignores annotation set filters -- the complete document will be
+sent to M\'{i}mir.
+
+\subsection{Conditional Output}\label{sec:batch-def:conditional-output}
+All output handlers support conditional output: the option to only save
+some of the documents, based on the value of a document feature. To make use of
+this facility, you need to specify which document feature should be read when
+deciding whether or not to save a given document, by adding an attribute named
+\verb!conditionalSaveFeatureName! to the \verb!output! XML tag in the batch
+definition, like in the following example:
+
+\begin{lstlisting}[language=XML]
+<output conditionalSaveFeatureName="save"
+    dir="../output-files-gate"
+    compression="gzip"
+    encoding="UTF-8"
+    fileExtension=".GATE.xml.gz"
+    class="gate.cloud.io.file.GATEStandOffFileOutputHandler" />
+\end{lstlisting}
+
+In this example, for each processed document, a document feature named {\tt
+save} will be sought. If this is found, and if its value is logical true (i.e.
+the feature value is a String with the content `{\it true}', `{\it yes}', or
+`{\it on}', regardless of case) then the document will be saved, otherwise it
+will be ignored.
+
+\section{Specifying the Documents to Process}
+
+If you are not using a streaming input handler then the final section of the
+batch definition specifies which document IDs GCP should process.  The IDs can
+be specified in two ways:
+
+\bit
+\item Directly in the XML as \verb!<id>doc/id/here</id>! elements.
+\item By defining a {\em document enumerator} which generates a list of IDs
+  from some external source.
+\eit
+
+GCP provides document enumerator implementations corresponding to the default
+input handlers, so a typical batch with a ZIP input handler, for example, would
+use a ZIP enumerator (configured for the same ZIP file) to generate the list of
+document IDs.
+
+A document enumerator is configured using a \verb!<documentEnumerator>! XML
+element inside the \verb!<documents>! element.  As with input and output
+handlers, this element requires a \verb!class! attribute specifying the Java
+class of the enumerator implementation and other attributes are handed off to
+the enumerator object to configure itself.
+
+\subsection{The File and ZIP enumerators}
+
+The default enumerator implementation corresponding to the file and ZIP input
+handlers are closely related to one another.
+
+The \verb!gate.cloud.io.file.FileDocumentEnumerator! takes a \verb!dir!
+attribute and the \verb!gate.cloud.io.zip.ZipDocumentEnumerator! takes
+\verb!srcFile! and \verb!fileNameEncoding! attributes (as described above for
+their corresponding input handlers) specifying where to find the directory
+or ZIP file to be enumerated.  To define which files (or ZIP entries) to
+enumerate, the enumerators use the ``fileset'' abstraction from Apache Ant,
+controlled by the following attributes:
+
+\bde
+\item[includes] (optional) comma-separated file name patterns specifying which
+  files to include in the search, e.g. \verb!"**/*.xml,**/*.XML"!.  If
+  omitted, all files or ZIP entries are included.
+\item[excludes] (optional) comma-separated file name patterns specifying which
+  files to exclude from the search, e.g. \verb!"**/*.ignore.xml"!.  If omitted,
+  nothing is excluded.
+\item[defaultExcludes] (optional) Ant filesets exclude certain file patterns by
+  default (\url{http://ant.apache.org/manual/dirtasks.html#defaultexcludes}),
+  and the GCP enumerators behave likewise.  To {\em disable} the default
+  excludes, set this attribute to ``off'' or ``no''.
+\item[prefix] (optional) a prefix to prepend to the paths that are returned by
+  the fileset.  For example, if a batch has a file input handler pointing to
+  the directory \verb!/data! and an enumerator pointing to the directory
+  \verb!/data/large! then the enumerator would need a prefix of ``large/'' to
+  produce IDs that are meaningful to the input handler.
+\ede
+
+See the Ant documentation for full details on the include and exclude patterns
+supported by filesets.  The IDs returned by the enumerator will be those that
+match at least one of the include patterns and also do not match any of the
+exclude patterns.
+
+Note also that include and exclude patterns are {\em case sensitive}, so a
+pattern of ``*.xml'' would not match ``FILE.XML'', for example.  To match both
+upper and lower-case variants, include both forms in the pattern.
+
+\subsection{The ARC and WARC enumerators}
+
+The \verb!gate.cloud.io.arc.ARCDocumentEnumerator! and
+\verb!WARCDocumentEnumerator! classes enumerate entries in an
+ARC or WARC file, and would typically be used in conjunction with the
+corresponding input handler.  The enumerators support the following attributes:
+
+\bde
+\item[srcFile] (required) the path to the archive to enumerate.
+\item[mimeTypes] (optional) whitespace-separated list of MIME types.  If
+  specified, the enumerator will only include entries in the archive whose
+  header specifies one of the given MIME types.  So a value of
+  \verb!"text/html application/pdf"! would enumerate only HTML and PDF files
+  from the archive.
+\item[includeStatusCodes] (optional) Each entry in an archive file records the
+  HTTP status code (200, 301, 404, etc.) that was returned by the server when
+  the item was crawled.  This attribute gives a regular expression that is
+  matched against the status codes that should be included in the enumeration.
+  If omitted, all status codes are included (except those excluded by
+  \verb!excludeStatusCodes!).
+\item[excludeStatusCodes] (optional) regular expression giving the status codes
+  that should be excluded from the enumeration.  If {\em both}
+  \verb!includeStatusCodes! {\em and} \verb!excludeStatusCodes! are omitted,
+  the default behaviour is to assume an exclude pattern of \verb![345].*! (i.e.
+  omit all 3xx, 4xx and 5xx status codes).
+\ede
+
+The enumerators returns document IDs in the form required by the corresponding
+handlers:
+
+\begin{lstlisting}[language=XML]
+<id recordPosition="{zero-based index into the archive}"
+    recordOffset="{byte offset of the start of this record}"
+    recordLength="{length of the record in bytes}"
+    >{original URL from which the document was crawled}</id>
+\end{lstlisting}
+
+This format is designed to work well in combination with the
+\verb!ARCDocumentNamingStrategy!  for file-based output handlers.
+
+\subsection{The {\tt ListDocumentEnumerator}}
+
+\verb!gate.cloud.io.ListDocumentEnumerator! is the final enumerator
+implementation provided by default, and it simply reads a list of document IDs
+from a plain text file, one ID per line.  It supports the following attributes:
+
+\bde
+\item[file] (required) the location of the text file.
+\item[encoding] (optional) the character encoding of the file.  If omitted, the
+  platform default encoding is assumed.
+\item[prefix] (optional) a common prefix to prepend to each ID (see the
+  file-based enumerator for an example of this).
+\ede
+
+This enumerator treats each line of the specified file as a separate document
+ID, ignoring leading and trailing whitespace on the line.  It is intended for
+use when there is a separate process (such as a Perl script) that generates the
+list of IDs in advance.
+
+
+% vim:ft=tex

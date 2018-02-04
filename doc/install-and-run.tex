@@ -1,0 +1,196 @@
+\section{Installing GCP}
+
+Binary releases are available for release versions of GCP starting with
+version 2.5, as a ZIP file which can be downloaded from
+GitHub at \url{https://github.com/GateNLP/gcp/releases}\footnote{Versions
+prior to 3.0 are available from SourceForge at
+\url{http://sf.net/projects/gate/files/gcp/}.}.  For development versions the
+software must be built from source.  The source code is available on GitHub
+at \url{https://github.com/GateNLP/gcp}.
+
+To build GCP you will need a Java 8 JDK.  Sun/Oracle and OpenJDK have been
+tested and are known to work.  GCJ is known {\em not} to work.  You will also
+need Apache Maven 3.3 or later.  Running ``mvn install'' will build the various
+components of GCP and create a ZIP file containing the binary distribution
+under \verb!distribution/target!.  Unpack that file somewhere to create your
+GCP installation.
+
+\section{Running GCP}
+
+Once GCP is installed you can run it in one of two ways:
+\bit
+\item using the \verb!gcp-cli.jar! executable
+JAR file in the installation directory.
+\item using the \verb!gcp-direct.sh! bash script.
+\eit
+
+\subsection{Using {\tt gcp-cli.jar}}
+
+The usual way to run GCP is to write one or more {\em batch definition} XML
+files (see chapter~\ref{chap:batch-def} for details) defining the application
+you want to run, the documents to process, and the output formats to produce.
+You then pass these batch definitions to \verb!gcp-cli.jar! for processing.
+The CLI tool takes a number of optional arguments:
+
+\bde
+\item[-m] Specifies the maximum Java heap size, in the format expected by the
+  usual \verb!-Xmx! Java option, e.g. \verb!-m 10G! for a 10GB heap limit.  The
+  default setting is \verb!12G!.  The \verb!gcp-cli! will spawn a separate java
+  process to run each batch, passing this memory limit to that process.  This
+  is different from specifying a \verb!-Xmx! option to \verb!gcp-cli!, which
+  would define the heap size limit for the CLI process itself, not the batch
+  runner processes it spawns.
+\item[-t] Specifies the number of threads that GCP should use to execute the
+  GATE application.  Typically this should be set to between 1 and 1.5 times
+  the number of processing cores available on the machine.  The default value
+  is 6, which is generally suitable for a 4-core machine.
+\item[-D] Java system property settings, for example
+  \verb!-Djava.io.tmpdir=/home/bigtmp!.  \verb!-D! options specified before the
+  \verb!-jar! apply to the virtual machine running the CLI, those specified
+  after \verb!-jar gcp-cli.jar! will be passed to the batch runner processes.
+  If you have an installed copy of GATE Developer you may wish to set
+  \verb!-Dgate.home=...! to point to your installation (\emph{after} the
+  \verb!-jar!, as this is a setting that needs to apply to the batch runner
+  VM).  This is required if your saved GATE application refers to standard GATE
+  plugins (using \verb!$gatehome$! paths in the xgapp), but is optional if the
+  application is self-contained -- GCP includes its own copy of GATE Embedded
+  and does not require a separate installed copy of the core libraries.
+\ede
+
+GATE plugins can also be pre-loaded using the \verb!-C! and \verb!-p! options,
+see the ``gcp-direct'' section below for details on these.
+
+The tool will determine the location of where GCP is installed in the 
+following order, taking the first it can find:
+\ben
+\item The value of the environment variable \verb!GCP_HOME! if it is set.
+\item The value of the propery  \verb!gcp.home! if it is set.
+\item The location of the JAR file used for running the program.
+\een
+Note that if the environment variable \verb!GCP_HOME! is set to a different
+directory than the one used to run gcp-cli, the version of 
+the batch runner in the directory pointed to by \verb!GCP_HOME! will get invoked
+which is probably not what is intended.
+
+The settings for the \verb!-m! and \verb!-t! options are typically a trade-off
+-- if your application is particularly memory-hungry or you are processing
+particularly large or complex documents you may need to lower the number of
+processing threads in order to give more memory (on average) to each one.
+
+GCP can run in two modes.  In the basic ``single-batch'' mode the final
+command-line argument is simply the path to a single {\em batch definition} XML
+file (see chapter~\ref{chap:batch-def} for details), and GCP will process that
+batch and then exit.
+
+The other (and more commonly used) mode is ``multi-batch'' mode, signified by
+the \verb!-d! command line option.  In this mode the final command-line
+argument is the path to a directory referred to as the {\em working directory}.
+\begin{verbatim}
+java -jar gcp-cli.jar -t 4 -m 8G -d /data/gcp
+\end{verbatim}
+
+The working directory is expected to contain a subdirectory named ``in'', and
+any file in this directory with the extension \verb!.xml! (in lower case) is
+assumed to be a batch definition file.  For each batch {\tt {\it batch}.xml} in
+the ``in'' directory, the script will:
+
+\bit
+\item run the batch, redirecting the standard output and error streams to a
+  file {\tt {\it working-dir}/logs/{\it batch}.xml.log}
+\item if the batch completes successfully, move the definition file to
+  {\tt {\it working-dir}/out/{\it batch}.xml}
+\item or, if the batch fails (i.e. the Java process exits with a non-zero exit
+  code, which occurs if, for example, one of the processing threads encounters
+  an OutOfMemoryError), move the definition file to
+  {\tt {\it working-dir}/err/{\it batch}.xml}
+\eit
+
+Additional batches can be added to the ``in'' directory at any time -- whenever
+a batch completes the script will re-scan the ``in'' directory to locate the
+next available batch.  In particular, failed batches can be moved back from
+``err'' to ``in'' and they will be re-processed, and if the report file for the
+failed batch is intact GCP will continue on from where it left off on the
+previous run.
+
+Creating a file named \verb!shutdown.gcp! in the ``in'' directory will cause
+the script to exit at the end of the batch it is currently processing (or
+immediately if it is currently idle).
+
+
+\subsection{Using {\tt gcp-direct.sh}}
+\label{sec:running:gcp-direct}
+
+The \verb!gcp-direct.sh! script can be used for simple cases where you want to
+process all the files under one particular directory and output the resulting
+annotations in GATE XML or FastInfoset format.  For this specific case it is
+not necessary to write an XML batch descriptor, you can specify the required
+parameters using command line options to \verb!gcp-direct.sh!:
+
+\bde
+\item[-t] the number of parallel threads to use.
+\item[-x] the path to the saved GATE application that you want to run.
+\item[-f] the output format to use for saving results, must be either ``xml''
+  (GATE XML format) or ``finf'' (FastInfoset format).  To use FastInfoset the
+  GATE \verb!Format_FastInfoset! plugin must be loaded by the saved
+  application.
+\item[-i] the directory in which to look for the input files or a file that contains
+  relative path names to the input files. If this points to a directory, all files in
+  this directory and any subdirectories will be processed (except for standard
+  backup and temporary file name patterns and source control metadata -- see
+  \url{http://ant.apache.org/manual/dirtasks.html#defaultexcludes} for
+  details). If this points to a file, the content of the file is expected to be 
+  one relative file path per line, using UTF-8 encoding. The file paths are 
+  interpreted to be relative to the directory that contains the list file.
+  If processed documents are written, then this will also be their relative 
+  path to the output directory. 
+\item[-o] (optional) the directory in which to place the output files.  Each input file
+  will generate an output file with the same name in the output directory.
+  If this option is missing, and the option \texttt{-b} is missing as well,
+  the documents are not saved!
+\item[-b] (optional) if this option is specified it can be used to specify
+  a batch file. In that case, the options \texttt{-x, -i, -o, -r, -I} are 
+  not required and ignored if specified and the corresponding information is
+  taken from the batch configuration file instead.
+\item[-r] (optional) path to the report file for this batch -- if omitted
+  GCP will use \verb!report.xml! in the current directory.
+\item[-ci] the input files are all gzip-compressed
+\item[-co] the output files should all be gzip-compressed. This only makes
+sense if \verb!-f xml! is also specified since the default output format
+\verb!finf! already is a compressed format. If this option is specified, the
+output file name gets the extension \verb!.gz! appended, in addition to 
+any other extension it already may have.
+\item[-p] (optional, may be specified multiple times) a GATE plugin to pre-load
+  in addition to those specified by the saved application.  The value of this
+  option can be one of three formats (tried in this order):
+  \ben
+  \item a set of Maven co-ordinates \verb!group:artifact:version!, to load
+    a plugin from a Maven repository.
+  \item an absolute URL e.g. starting \verb!file:/...! or \verb!http://!, to
+    load a directory-based plugin from that URL.
+  \item a local file path, either absolute or relative to the working directory
+    of the GCP process, to load a directory-based plugin from disk.
+  \een
+\item[-C] (optional, may be specified multiple times) when loading Maven-style
+  plugins using \verb!-p! GATE will typically go out to the internet to fetch the
+  plugin and its dependencies from a remote Maven repository.  If you have a local
+  Maven cache of plugins on your disk you can specify its location with this option
+  and the local cache will be searched first before attempting to download plugins
+  from the network.
+\ede
+
+Additionally, you can specify \verb!-D! and \verb!-X! options which will be
+passed through to the Java VM, for example you can set the maximum amount of
+heap memory that the JVM can use with an option like \verb!-Xmx2G!
+
+The \verb!gcp-direct.sh! script is deliberately opinionated, in order to reduce
+the number of different options that need to be set, and it has a number of
+hard-coded assumptions.  It assumes that your input documents use the UTF-8
+character encoding, that the correct document format parser to use can be
+determined from the file extension, and that you always want to save \emph{all}
+the annotations that your application generates.  If you need to process
+documents in a different encoding, you have more complex output requirements
+(XCES, JSON, M\'{i}mir, \ldots) or want to output only a subset of the GATE
+annotations from each document, then you should write a batch definition in XML
+and use \verb!gcp-cli.jar! as discussed above.
+
+% vim:ft=tex

@@ -1,0 +1,234 @@
+{\em GCP} is a tool designed to support the execution of pipelines built using
+GATE Developer over large collections of thousands or millions of documents,
+using a multi-threaded architecture to make the best use of today's multi-core
+processors.  GCP tasks or {\em batches} are defined using an extensible XML
+syntax, describing the location and format of the input files, the GATE
+application to be run, and the kinds of outputs required.  A number of standard
+input and output handlers are provided, but all the various components are
+pluggable so custom implementations can be used if the task requires it.
+GCP keeps track of the progress of each batch in a human- and machine-readable
+XML format, and is designed so that if a running batch is interrupted for any
+reason it can be re-run with the same settings and GCP will automatically
+continue from where it left off.
+
+\section{Definitions}\label{sec:intro:definitions}
+
+This section defines a number of terms that have specific meanings in GCP.
+
+\subsection*{Batch}
+
+A {\em batch} is the unit of work for a GCP process.  It is described by an XML
+file, and includes the location of a saved GATE application state (a ``gapp''
+file), the location of the {\em report} file, one {\em input handler}
+definition, zero or more {\em output handler} definitions and a specification
+of which documents from the input handler should be processed (either as an
+explicit list of document IDs or as a {\em document enumerator} which
+calculates the IDs in an appropriate manner).
+
+Chapter~\ref{chap:batch-def} describes the format of batch definition files in
+detail.
+
+\subsection*{Report}
+
+The progress of a running batch is recorded in an XML {\em report} file as the
+documents are processed.  For each document ID, the report records whether the
+document was processed successfully or whether processing failed with an error.
+For successful documents the report includes statistics on how many annotations
+were found in the document, and for a completed batch it also records overall
+statistics on the number of documents and total amount of data processed, the
+total number of successful and failed documents and the total processing time.
+
+The report file for a batch is also the mechanism which allows GCP to recover
+if processing is unexpectedly interrupted.  If GCP is asked to process a batch
+where the report file already exists it will parse the existing report and
+ignore documents that are marked as having already been successfully processed.
+Thus you can simply restart a crashed GCP batch with the same command-line
+settings and it will continue processing from where it left off on the previous
+run.
+
+\subsection*{GATE application}
+
+A GCP batch specifies the GATE application that is to be run over the documents
+as a standard ``GAPP file'' saved application state, which would typically be
+created using GATE Developer.
+
+\subsection*{Input handler}
+
+The {\em input handler} for a GCP batch specifies the source of documents to be
+processed.  The job of an input handler is to take a document {\em ID} and load
+the corresponding GATE \verb!Document! object ready to be processed.  There are
+a number of standard input handlers provided with GCP to take input documents
+from individual files on disk, directly from a ZIP archive file or from an ARC
+file as produced by the Heritrix web crawler
+(\url{http://crawler.archive.org}).  If the standard handlers do not suit your
+needs then you can provide a custom implementation by including your handler
+class in a GATE CREOLE plugin referenced by your saved application.
+
+\subsection*{Document enumerator}
+
+While the input handler specifies how to go from document IDs to
+\verb!gate.Document! objects, it does not specify which document IDs are to be
+processed.  The IDs can be specified explicitly in the batch XML file but more
+commonly an {\em enumerator} would be used to build a list of IDs by scanning
+the input directory or archive file.  Standard enumerator implementations are
+provided, corresponding to the standard input handler types, to select a subset
+of documents from the input directory or archive according to various criteria.
+As with input handlers, custom enumerator implementations can be provided
+through the standard CREOLE plugin mechanism.
+
+\subsection*{Output handler}
+
+Most batch definitions will include one or more {\em output handler}
+definitions, which describe what to do with the document once it has been
+processed by the GATE application.  Standard output handler implementations are
+provided to save the documents as GATE XML files, plain text and XCES standoff
+annotations, inline XML (``save preserving format'' in GATE Developer terms),
+and to send the annotated documents to a M\'{i}mir server for indexing.
+Custom implementations can be added using the CREOLE plugin mechanism.
+
+Note that output handler definitions are optional -- if you do not specify any
+output handlers then GCP will not save the results anywhere, but this may be
+appropriate if, for example, your pipeline contains a custom PR that saves your
+results to a relational database or similar.
+
+
+\section{Processing Model}
+
+GCP processes a batch as follows.
+
+\ben
+\item Parse the batch definition file, and run the document enumerators (if
+  any) to build the complete list of document IDs to be processed.
+\item Parse the existing (possibly partial) report file, if one exists, and
+  remove from this list any documents that are already marked as having been
+  successfully processed.
+\item Create a thread pool of a size specified on the command line (the default
+  is 6 threads).
+\item Load the saved application state, and use
+  \htlink{http://gate.ac.uk/gate/doc/javadoc/gate/Factory.html\#duplicate(gate.Resource)}%
+  {\tt Factory.duplicate} to make additional copies of the application such
+  that there is one independent copy of the application per thread in the
+  thread pool.
+\item Run the processing threads.  Each thread will repeatedly: 
+  \bit
+  \item take the next available unprocessed document ID from the list.
+  \item ask the input handler for the corresponding \verb!gate.Document!.
+  \item put that document into a singleton \verb!Corpus! and run this thread's
+    copy of the GATE application over that corpus.
+  \item pass the annotated document to each of the output handlers.
+  \item write an entry to the report file indicating whether the document was
+    processed successfully or whether an exception occurred during processing.
+  \item release the document using \verb!Factory.deleteResource!.
+  \eit
+\item Once all the documents have been processed, shut down the thread pool and
+  call \verb!Factory.deleteResource! to cleanly shut down the GATE
+  applications.
+\een
+
+Due to the asynchronous nature of the processing threads, if one document takes
+a particularly long time to process the other threads can proceed with many
+other documents in parallel, they are not forced to wait for the slowest
+thread.
+
+\section{Changelog}\label{sec:intro:changes}
+
+This section summarises the main changes between releases of GCP
+
+\subsection{3.0 (February 2018)}
+
+Updated to work with GATE Embedded version 8.5:
+\bit
+\item Minimum required Java version is now Java 8.
+\item GCP now builds using Maven rather than Ant, and has been split into
+  ``api'' and ``impl'' modules. GATE plugins that want to provide custom input
+  or output handlers should declare a ``provided'' dependency on the
+  appropriate version of \verb!uk.ac.gate:gcp-api!.
+\item New command line parameters \verb!-C! and \verb!-p! to allow pre-loading
+  of specific GATE plugins in addition to those declared by the saved
+  application.  This is useful, for example, to load plugins that provide
+  document format parsers.
+\eit
+
+\subsection{2.8.1 (June 2017)}
+
+GCP now depends on GATE Embedded 8.4.1.  Also the \verb!-i! option to
+\verb!gcp-direct.sh! can now be a \emph{file} which lists the documents to
+process, instead of just a \emph{directory} of documents.
+
+\subsection{2.8 (February 2017)}
+
+GCP now depends on GATE Embedded 8.4.
+
+\subsection{2.7 (January 2017)}
+
+This is a minor bugfix release, the main change is that GCP now depends on GATE
+Embedded 8.3.  There have been minor changes to the \verb!gcp-direct.sh! script,
+in particular it is now possible to run a pipeline with \emph{no} output
+handler at all, useful in cases where there is a PR within the pipeline that is
+responsible for handling the output, or if you want to run a pipeline purely
+for its side effects (e.g. building a frequency table or training some sort of
+machine learning model).
+
+\subsection{2.6 (June 2016)}
+
+This is a minor bugfix release, the main change is that GCP now depends on GATE
+Embedded 8.2.
+
+\subsection{2.5 (June 2015)}
+
+\bit
+\item Now depends on GATE Embedded 8.1
+\item Introduced ``streaming'' style input and output handlers for JSON
+  data (e.g. from Twitter), which can read a series of documents from
+  a single JSON input file, and write JSON results to a single concatenated
+  output file (sections~\ref{sec:batch-def:json-input} and
+  \ref{sec:batch-def:file-output-handlers}).
+\item Introduced the \verb!gcp-direct.sh! script to cover simple invocations
+  of GCP without the need to write a batch definition XML file
+  (section~\ref{sec:running:gcp-direct}).
+\item For ``controller-aware''
+  PRs\footnote{\url{http://gate.ac.uk/gate/doc/javadoc/gate/creole/ControllerAwarePR.html}},
+  the various callbacks are now invoked just once per batch rather than before
+  and after every single document.
+\eit
+
+\subsection{2.4 (May 2014)}
+
+\bit
+\item Now depends on GATE Embedded 8.0 (and thus requires Java 7 to run)
+\item Added input handler for WARC format archives, to complement the existing
+  ARC handler (section~\ref{sec:batch-def:arc}).
+\item ARC and WARC handlers can optionally load individual records from
+  remotely hosted archives using HTTP requests with a ``Range'' header.  This
+  facility can be used with publicly-hosted data sets such as Common
+  Crawl\footnote{\url{http://www.commoncrawl.org}}.  To support this
+  functionality, document identifiers in a batch definition can now take XML
+  attributes as well as the actual string identifier (exactly how such
+  attributes are used is up to the handler implementations).
+\item Added output handler to save documents in a JSON format modelled on that
+  used by Twitter to represent ``entities'' (e.g. username mentions) in Tweets.
+\item Efficiency improvements in the M\'{i}mir output handler, to send
+  documents to the server in batches rather than opening a new HTTP connection
+  for every document.
+\eit
+
+\subsection{2.3 (November 2012)}
+
+\bit
+\item Now depends on GATE Embedded 7.1
+\item Introduced support for \emph{conditional saving of documents}
+  (section~\ref{sec:batch-def:conditional-output})
+\item Added the \emph{serialized object output handler}
+  (section~\ref{sec:batch-def:file-output-handlers})
+\item More robust and reliable counting of the size of each input document.
+\eit
+
+\subsection{2.2 (February 2012)}
+
+\bit
+\item Now depends on GATE Embedded 7.0
+\item Introduced Java-based command line interface to replace the \verb|gcp.sh|
+  shell script, which behaves more consistently across platforms.
+\eit
+
+% vim:ft=tex
