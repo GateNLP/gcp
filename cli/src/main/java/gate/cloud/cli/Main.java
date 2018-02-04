@@ -30,6 +30,13 @@ public class Main {
       "Optional arguments:\n" +
       "  -m maxMem    : maximum Java heap size, passed as -Xmx (default 12G)\n" +
       "  -t threads   : number of parallel processing threads (default 6)\n" +
+      "  -C dir       : Maven cache directory to search for plugins (optional,\n" +
+      "                 may be specifed more than once)\n" +
+      "  -p plugin    : GATE plugin to pre-load before loading the application.\n" +
+      "                 May be of the form group:artifact:version for a Maven plugin\n" +
+      "                 or may be a URL or file path for a directory-based plugin.\n" +
+      "                 (optional, may be specified several times to load multiple\n" +
+      "                 plugins).\n" +
       "  -Dname=value : Java system property settings, passed directly to the VM\n" +
       "\n" +
       "If -d is specified, the following parameter is taken to refer to a \"working\"\n" +
@@ -138,6 +145,8 @@ public class Main {
 
   private static String maxMem = "12G";
   private static String threads = "6";
+
+  private static List<String> gcpOpts = new ArrayList<String>();
   
   // non-null only in dir mode
   private static File workingDir = null;
@@ -188,6 +197,9 @@ public class Main {
         threads = args[++i];
       } else if("-d".equals(args[i])) {
         workingDir = new File(args[++i]);
+      } else if("-C".equals(args[i]) || "-p".equals(args[i])) {
+        gcpOpts.add(args[i]);
+        gcpOpts.add(args[++i]);
       } else if(args[i].startsWith("-D")) {
         javaOpts.add(args[i]);
       } else {
@@ -217,6 +229,7 @@ public class Main {
     cmdline.add("-Dgcp.home=" + gcpHome.getAbsolutePath());
     cmdline.add("-Djava.protocol.handler.pkgs=gate.cloud.util.protocols");
     cmdline.add("gate.cloud.batch.BatchRunner");
+    cmdline.addAll(gcpOpts);
     cmdline.add(threads);
     // this will be replaced with the right batch file path at run time
     cmdline.add("dummyBatchFileName.xml");
