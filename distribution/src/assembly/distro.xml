@@ -26,11 +26,13 @@
     <dependencySet>
       <scope>runtime</scope>
       <outputDirectory>/lib</outputDirectory>
+      <useProjectArtifact>false</useProjectArtifact>
       <unpack>false</unpack>
     </dependencySet>
     <dependencySet>
       <scope>provided</scope>
       <outputDirectory></outputDirectory>
+      <useProjectArtifact>false</useProjectArtifact>
       <unpack>false</unpack>
       <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
     </dependencySet>
