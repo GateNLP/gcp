@@ -26,7 +26,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.zip.GZIPOutputStream;
 
@@ -50,6 +49,11 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
     public void writeItem(W writer, I item) throws Exception;
   }
   
+  @FunctionalInterface
+  public static interface WriterCreator<W> {
+    public W create(OutputStream stream) throws Exception;
+  }
+  
   private static final Logger logger =
       Logger.getLogger(StreamingFileOutputHelper.class);
 
@@ -69,7 +73,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
 
   protected TItem endOfData;
 
-  protected Function<OutputStream, TWriter> openWriter;
+  protected WriterCreator<TWriter> openWriter;
 
   protected WriteOperation<TWriter, TItem> writeItem;
 
@@ -83,14 +87,14 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
    *          stream. This will be compared by reference and should be an object
    *          that will not otherwise be used in normal processing.
    * @param openWriter
-   *          function that takes an output stream and creates an appropriate
+   *          operation that takes an output stream and creates an appropriate
    *          writer object for the item type.
-   * @param writeItem consumer that writes the given item to the given writer
+   * @param writeItem operation that writes the given item to the given writer.
    * @param itemSize function that computes an approcimate size in bytes of the
    *          given item, used to determine when to check for chunk roll-over.
    */
   public StreamingFileOutputHelper(TItem endOfData,
-      Function<OutputStream, TWriter> openWriter,
+      WriterCreator<TWriter> openWriter,
       WriteOperation<TWriter, TItem> writeItem, ToIntFunction<TItem> itemSize) {
     super();
     this.endOfData = endOfData;
@@ -179,8 +183,8 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
             if(currentOutput == null) {
               try {
                 openNextChunk();
-              } catch(IOException e) {
-                logger.error("Failed to open output file", e);
+              } catch(Exception e) {
+                logger.error("Failed to open output file " + currentFile, e);
               }
             }
             try {
@@ -231,7 +235,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
       }
     }
 
-    private void openNextChunk() throws IOException {
+    private void openNextChunk() throws Exception {
       // if we're restarting we might have to skip some batches
       do {
         String newFileName = String.format(pattern, ++currentChunk);
@@ -254,7 +258,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
         currentProcess = pb.start();
         newStream = currentProcess.getOutputStream();
       }
-      currentOutput = openWriter.apply(newStream);
+      currentOutput = openWriter.create(newStream);
     }
   }
 }
