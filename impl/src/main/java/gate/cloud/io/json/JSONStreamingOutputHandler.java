@@ -16,8 +16,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 import gate.Document;
 import gate.cloud.batch.DocumentID;
 import gate.cloud.io.file.JSONOutputHandler;
@@ -34,9 +32,6 @@ import gate.util.GateException;
  */
 public class JSONStreamingOutputHandler extends JSONOutputHandler {
 
-  private static final Logger logger = Logger
-          .getLogger(JSONStreamingOutputHandler.class);
-
   private StreamingFileOutputHelper<byte[], OutputStream> helper;
 
   public JSONStreamingOutputHandler() {
@@ -45,12 +40,8 @@ public class JSONStreamingOutputHandler extends JSONOutputHandler {
         // we use the output stream as-is
         x -> x,
         (OutputStream os, byte[] bytes) -> {
-          try {
-            os.write(bytes);
-            os.flush();
-          } catch(IOException e) {
-            logger.warn("Error writing to file", e);
-          }
+          os.write(bytes);
+          os.flush();
         },
         (byte[] bytes) -> bytes.length);
   }

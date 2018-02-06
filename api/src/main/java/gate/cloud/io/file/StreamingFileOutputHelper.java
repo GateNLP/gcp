@@ -26,7 +26,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.zip.GZIPOutputStream;
@@ -45,6 +44,12 @@ import gate.util.GateException;
  * @param <TWriter> the type of the object that will be used to write items to the files.
  */
 public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
+  
+  @FunctionalInterface
+  public static interface WriteOperation<W, I> {
+    public void writeItem(W writer, I item) throws Exception;
+  }
+  
   private static final Logger logger =
       Logger.getLogger(StreamingFileOutputHelper.class);
 
@@ -66,7 +71,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
 
   protected Function<OutputStream, TWriter> openWriter;
 
-  protected BiConsumer<TWriter, TItem> writeItem;
+  protected WriteOperation<TWriter, TItem> writeItem;
 
   protected ToIntFunction<TItem> itemSize;
 
@@ -86,7 +91,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
    */
   public StreamingFileOutputHelper(TItem endOfData,
       Function<OutputStream, TWriter> openWriter,
-      BiConsumer<TWriter, TItem> writeItem, ToIntFunction<TItem> itemSize) {
+      WriteOperation<TWriter, TItem> writeItem, ToIntFunction<TItem> itemSize) {
     super();
     this.endOfData = endOfData;
     this.openWriter = openWriter;
@@ -178,7 +183,11 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
                 logger.error("Failed to open output file", e);
               }
             }
-            writeItem.accept(currentOutput, item);
+            try {
+              writeItem.writeItem(currentOutput, item);
+            } catch(Exception e) {
+              logger.warn("Error writing to file " + currentFile, e);
+            }
             bytesSinceLastCheck += itemSize.applyAsInt(item);
             if(bytesSinceLastCheck > 1024 * 1024) {
               if(currentFile.length() > chunkSize) {
