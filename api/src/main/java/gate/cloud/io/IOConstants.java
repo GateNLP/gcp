@@ -176,6 +176,12 @@ public class IOConstants {
    * Target size for a single output file from a streaming output handler.
    */
   public static final String PARAM_CHUNK_SIZE = "chunkSize";
+  
+  /**
+   * Parameter indicating that a component should collect or make use
+   * of repositioning info if it is available.
+   */
+  public static final String PARAM_REPOSITIONING_INFO = "repositioningInfo";
 
   /**
    * XML namespace used for all elements in a batch definition XML file.

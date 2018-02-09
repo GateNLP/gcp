@@ -60,7 +60,12 @@ public class FileInputHandler implements InputHandler {
    * The type of compression used (one of {@link IOConstants#VALUE_COMPRESSION_NONE}, or
    * {@link IOConstants#VALUE_COMPRESSION_GZIP}).
    */
-  protected String compression;  
+  protected String compression; 
+  
+  /**
+   * Should we collect repositioning info when parsing?
+   */
+  protected boolean repositioningInfo = false;
   
   /* (non-Javadoc)
    * @see gate.cloud.InputHandler#config(java.util.Map)
@@ -90,6 +95,10 @@ public class FileInputHandler implements InputHandler {
     encoding = configData.get(PARAM_ENCODING);
     //mime type
     mimeType = configData.get(PARAM_MIME_TYPE);
+    
+    if("true".equals(configData.get(PARAM_REPOSITIONING_INFO))) {
+      repositioningInfo = true;
+    }
   }
   
   /* (non-Javadoc)
@@ -114,6 +123,10 @@ public class FileInputHandler implements InputHandler {
     }
     
     params.put(Document.DOCUMENT_MARKUP_AWARE_PARAMETER_NAME, Boolean.TRUE);
+    
+    if(repositioningInfo) {
+      params.put(Document.DOCUMENT_REPOSITIONING_PARAMETER_NAME, Boolean.TRUE);
+    }
     
     logger.debug("Loading document from file " + docFile);
 

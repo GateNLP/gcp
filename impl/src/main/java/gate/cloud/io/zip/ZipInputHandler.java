@@ -15,6 +15,7 @@ import static gate.cloud.io.IOConstants.PARAM_BATCH_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_ENCODING;
 import static gate.cloud.io.IOConstants.PARAM_FILE_NAME_ENCODING;
 import static gate.cloud.io.IOConstants.PARAM_MIME_TYPE;
+import static gate.cloud.io.IOConstants.PARAM_REPOSITIONING_INFO;
 import static gate.cloud.io.IOConstants.PARAM_SOURCE_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_ZIP_FILE_LOCATION;
 import gate.Document;
@@ -83,6 +84,11 @@ public class ZipInputHandler implements InputHandler {
    * unspecified, the platform default is used.
    */
   protected String fileNameEncoding;
+  
+  /**
+   * Should we collect repositioning info when parsing?
+   */
+  protected boolean repositioningInfo = false;
 
   /**
    * Pool of ZipFile instances used to load documents.
@@ -132,6 +138,10 @@ public class ZipInputHandler implements InputHandler {
     mimeType = configData.get(PARAM_MIME_TYPE);
     // file name encoding
     fileNameEncoding = configData.get(PARAM_FILE_NAME_ENCODING);
+    
+    if("true".equals(configData.get(PARAM_REPOSITIONING_INFO))) {
+      repositioningInfo = true;
+    }
   }
 
   public DocumentData getInputDocument(DocumentID id) throws IOException, GateException {
@@ -160,6 +170,10 @@ public class ZipInputHandler implements InputHandler {
       }
 
       params.put(Document.DOCUMENT_MARKUP_AWARE_PARAMETER_NAME, Boolean.TRUE);
+      
+      if(repositioningInfo) {
+        params.put(Document.DOCUMENT_REPOSITIONING_PARAMETER_NAME, Boolean.TRUE);
+      }
 
       logger.debug("Loading document from URL " + docUrl);
 

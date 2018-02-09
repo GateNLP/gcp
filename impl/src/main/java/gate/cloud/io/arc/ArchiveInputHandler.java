@@ -15,6 +15,7 @@ import static gate.cloud.io.IOConstants.PARAM_BATCH_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_SOURCE_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_DEFAULT_ENCODING;
 import static gate.cloud.io.IOConstants.PARAM_MIME_TYPE;
+import static gate.cloud.io.IOConstants.PARAM_REPOSITIONING_INFO;
 
 import gate.Document;
 import gate.Factory;
@@ -147,6 +148,11 @@ public abstract class ArchiveInputHandler implements InputHandler {
   protected String mimeType;
   
   /**
+   * Should we collect repositioning info when parsing?
+   */
+  protected boolean repositioningInfo = false;
+  
+  /**
    * Regular expression pattern matching the "charset" from an HTTP
    * Content-type header.
    */
@@ -185,6 +191,10 @@ public abstract class ArchiveInputHandler implements InputHandler {
     }
     
     mimeType = configData.get(PARAM_MIME_TYPE);
+    
+    if("true".equals(configData.get(PARAM_REPOSITIONING_INFO))) {
+      repositioningInfo = true;
+    }
   }
 
   public void init() throws IOException, GateException { }
@@ -299,6 +309,10 @@ public abstract class ArchiveInputHandler implements InputHandler {
       docParams.put(Document.DOCUMENT_MARKUP_AWARE_PARAMETER_NAME, Boolean.TRUE);
       if(mimeType != null) {
         docParams.put(Document.DOCUMENT_MIME_TYPE_PARAMETER_NAME, mimeType);
+      }
+      
+      if(repositioningInfo) {
+        docParams.put(Document.DOCUMENT_REPOSITIONING_PARAMETER_NAME, Boolean.TRUE);
       }
       
       FeatureMap docFeatures = Factory.newFeatureMap();
