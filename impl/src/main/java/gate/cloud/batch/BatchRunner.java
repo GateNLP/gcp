@@ -683,6 +683,7 @@ runningJob = new BatchHandler(batch);
       String[] cacheDirs = line.getOptionValues('C');
       if(cacheDirs != null) {
         for(String dir : cacheDirs) {
+          log.info("Using Maven cache at " + dir);
           gate.util.maven.Utils.addCacheDirectory(new File(dir));
         }
       }
