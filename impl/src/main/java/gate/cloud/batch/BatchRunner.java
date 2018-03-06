@@ -213,6 +213,17 @@ public class BatchRunner {
         jobPusher.start();
       } else {
         // no documents, so fire end of batch straight away
+
+        // shut down the executor and wait for it to terminate
+        executor.shutdown();
+        while(!executor.isTerminated()) {
+          try {
+            executor.awaitTermination(60L, TimeUnit.SECONDS);
+          } catch(InterruptedException e) {
+            // just re-interrupt ourselves and give up
+            Thread.currentThread().interrupt();
+          }
+        }
         resultQueue.add(new EndOfBatchResult());
       }
     }
