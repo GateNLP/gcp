@@ -31,6 +31,9 @@ import gate.util.persistence.PersistenceManager;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -189,6 +192,9 @@ public class BatchRunner {
               }
             } else {
               for(DocumentID id : batch.getUnprocessedDocumentIDs()) {
+                if(processor.isInterrupted()) {
+                  break;
+                }
                 processor.processDocument(id);
                 if(Thread.interrupted()) {
                   return;
@@ -314,6 +320,12 @@ public class BatchRunner {
      */
     public String getBatchId() {
       return id;
+    }
+
+    public void interruptBatch() {
+      if(processor != null) {
+        processor.interruptBatch();
+      }
     }
 
 
@@ -915,6 +927,8 @@ public class BatchRunner {
       log.info("Loading time (seconds): " + (loadingFinishedTime - startTime) / 1000.0);
       log.info("Launching batch:\n" + aBatch);
 
+      installSignalHandler(instance);
+
       // if this is run from gcp-direct and there are no unprocessed documents, do nothing
       if(!invokedByGcpCli && aBatch.getUnprocessedDocumentIDs() != null && aBatch.getUnprocessedDocumentIDs().length == 0) {
         log.info("No documents to process, exiting");
@@ -929,5 +943,48 @@ public class BatchRunner {
 
   }
 
+
+  /**
+   * Install a signal handler that attempts to gracefully abort the batch on
+   * CTRL-C, rather than killing this process.  This is done using reflection
+   * so as not to compile-time depend on sun.misc.  If anything goes wrong when
+   * installing the signal handler we warn and carry on without it.
+   */
+  protected static void installSignalHandler(final BatchRunner runner) {
+    try {
+      Class<?> signalClass = Class.forName("sun.misc.Signal");
+      Class<?> sigHandlerClass = Class.forName("sun.misc.SignalHandler");
+      Object sigInt = signalClass.getConstructor(String.class).newInstance("INT");
+      
+      class InterruptBatchHandler implements InvocationHandler {
+        public Object oldHandler;
+        
+        public Object invoke(Object proxy, Method method, Object[] args)
+                throws Throwable {
+          if(method.getDeclaringClass() == Object.class) {
+            return method.invoke(this, args);
+          }
+          if("handle".equals(method.getName())) {
+            synchronized(runner) {
+              if(runner.runningJob != null) {
+                System.out.println("Interrupting batch");
+                runner.runningJob.interruptBatch();
+              } else {
+                method.invoke(oldHandler, args);
+              }
+            }
+          }
+          return null;
+        }
+      }
+      
+      InterruptBatchHandler handler = new InterruptBatchHandler();
+      Object handlerProxy = Proxy.newProxyInstance(BatchRunner.class.getClassLoader(), new Class<?>[] {sigHandlerClass}, handler);
+      handler.oldHandler = signalClass.getMethod("handle", signalClass, sigHandlerClass).invoke(null, sigInt, handlerProxy);
+    }
+    catch(Exception e) {
+      System.out.println("Warning: couldn't install signal handler: " + e);
+    }
+  }
 
 }

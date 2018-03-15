@@ -85,4 +85,15 @@ public interface DocumentProcessor {
    * handler implements that interface.
    */
   public void processStreaming();
+
+  /**
+   * Interrupt the execution of this processor, requesting it to stop
+   * processing any new documents and end any streaming processing loop.
+   */
+  public void interruptBatch();
+
+  /**
+   * Has this processor been interrupted?
+   */
+  public boolean isInterrupted();
 }

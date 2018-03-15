@@ -86,4 +86,11 @@ public interface BatchJobData {
    * @return a long value
    */  
   public long getTotalFileSize();
+
+  /**
+   * Interrupt the processing of this batch, requesting that it stop processing
+   * new documents and exit as soon as the in-progress documents have
+   * completed.
+   */
+  public void interruptBatch();
 }

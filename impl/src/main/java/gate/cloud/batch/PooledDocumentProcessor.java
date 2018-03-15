@@ -21,6 +21,7 @@ import gate.cloud.io.StreamingInputHandler;
 import gate.cloud.util.GateResourcePool;
 import gate.creole.AbstractController;
 import gate.creole.ExecutionException;
+import gate.creole.ExecutionInterruptedException;
 import gate.creole.ResourceInstantiationException;
 import gate.util.Benchmark;
 import gate.util.GateException;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.stream.XMLOutputFactory;
 
@@ -97,6 +99,8 @@ public class PooledDocumentProcessor implements DocumentProcessor {
    * controller.
    */
   private GateResourcePool<CorpusController> appPool;
+
+  private AtomicBoolean interrupted = new AtomicBoolean(false);
 
   /**
    * Pool holding corpora.
@@ -237,7 +241,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
     log.info("Processing in streaming mode");
     DocumentData dd = null;
     try {
-      while((dd = stream.nextDocument()) != null) {
+      while((dd = stream.nextDocument()) != null && !isInterrupted()) {
         final DocumentData docData = dd;
         log.debug("Loaded document " + dd.id);
         final CorpusController controller = appPool.take();
@@ -361,13 +365,24 @@ public class PooledDocumentProcessor implements DocumentProcessor {
   public void dispose() {
     log.info("Cleaning up PooledGCPProcessor");    
     // Run the controller callback method controllerExecutionFinished for all controllers. 
-    for(CorpusController ct : appPool) {
-      try {
-        ((AbstractController)ct).invokeControllerExecutionFinished();
-      } catch (ExecutionException ex) {
-        log.error(id+": Exception when executing the controllerExecutionFinished method for controller "+ct.getName(), ex);
-      }
-    }    
+    if(isInterrupted()) {
+      ExecutionException interruptException = new ExecutionInterruptedException("Batch was interrupted");
+      for(CorpusController ct : appPool) {
+        try {
+          ((AbstractController)ct).invokeControllerExecutionAborted(interruptException);
+        } catch (ExecutionException ex) {
+          log.error(id+": Exception when executing the controllerExecutionAborted method for controller "+ct.getName(), ex);
+        }
+      }    
+    } else {
+      for(CorpusController ct : appPool) {
+        try {
+          ((AbstractController)ct).invokeControllerExecutionFinished();
+        } catch (ExecutionException ex) {
+          log.error(id+": Exception when executing the controllerExecutionFinished method for controller "+ct.getName(), ex);
+        }
+      }    
+    }
     // Now dispose of all the corpora 
     for(CorpusController ct : appPool) {
       Corpus co = ct.getCorpus();
@@ -390,5 +405,13 @@ public class PooledDocumentProcessor implements DocumentProcessor {
       }
     }    
     appPool.dispose();
+  }
+
+  public boolean isInterrupted() {
+    return interrupted.get();
+  }
+
+  public void interruptBatch() {
+    interrupted.set(true);
   }
 }
