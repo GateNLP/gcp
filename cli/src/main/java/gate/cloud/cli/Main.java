@@ -123,7 +123,22 @@ public class Main {
           if("handle".equals(method.getName())) {
             if(currentGcpProcess != null) {
               System.out.println("Interrupting GCP process");
-              currentGcpProcess.destroy();
+              if(pidFile != null && pidFile.canRead() && pidFile.length() > 0
+                  && new File("/bin/sh").canExecute() && new File("/bin/cat").canExecute()) {
+                // we can try a kill -INT
+                ProcessBuilder killPb = new ProcessBuilder("/bin/sh", "-c",
+                    "kill -INT `/bin/cat \"" + pidFile.getAbsolutePath() + "\"`");
+                killPb.inheritIO();
+                try {
+                  killPb.start().waitFor();
+                } catch(Exception e) {
+                  System.err.println("Error killing GCP process");
+                  e.printStackTrace();
+                }
+              } else {
+                // can't use kill command, just destroy as normal
+                currentGcpProcess.destroy();
+              }
             } else {
               method.invoke(oldHandler, args);
             }
@@ -156,6 +171,8 @@ public class Main {
   private static ProcessBuilder processBuilder = null;
   
   private static Process currentGcpProcess = null;
+
+  private static File pidFile = null;
 
   private static List<String> javaOpts = new ArrayList<String>();
 
@@ -228,6 +245,19 @@ public class Main {
     cmdline.addAll(javaOpts);
     cmdline.add("-Dgcp.home=" + gcpHome.getAbsolutePath());
     cmdline.add("-Djava.protocol.handler.pkgs=gate.cloud.util.protocols");
+    if(!javaOpts.stream().filter(v -> v.startsWith("-Dgcp.pid.file=")).findAny().isPresent()
+          && new File("/bin/sh").canExecute() && new File("/bin/cat").canExecute()) {
+      // no pidfile option specified, and we're on a platform where
+      // we have the option of killing the underlying GCP with
+      // /bin/sh -c "kill -INT ...", so inject our own pid file option
+      try {
+        pidFile = File.createTempFile("gcp-", ".pid");
+        pidFile.delete();
+        cmdline.add("-Dgcp.pid.file=" + pidFile.getAbsolutePath());
+      } catch(Exception e) {
+        // couldn't create PID file, carry on without it
+      }
+    }
     cmdline.add("gate.cloud.batch.BatchRunner");
     cmdline.addAll(gcpOpts);
     cmdline.add(threads);
@@ -256,6 +286,10 @@ public class Main {
       }
     } finally {
       currentGcpProcess = null;
+      if(pidFile != null) {
+        // delete pid file ready for next run
+        pidFile.delete();
+      }
     }
     return returnCode;
   }
