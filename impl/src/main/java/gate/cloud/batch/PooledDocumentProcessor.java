@@ -413,5 +413,6 @@ public class PooledDocumentProcessor implements DocumentProcessor {
 
   public void interruptBatch() {
     interrupted.set(true);
+    appPool.interruptAll();
   }
 }

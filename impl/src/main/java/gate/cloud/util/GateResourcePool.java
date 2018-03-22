@@ -11,10 +11,13 @@
  */
 package gate.cloud.util;
 
+import gate.Executable;
 import gate.Factory;
 import gate.Resource;
 import gate.creole.*;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -30,9 +33,15 @@ public class GateResourcePool<T extends Resource>  implements Iterable<T> {
   private static final Logger log = Logger.getLogger(GateResourcePool.class);
 
   /**
-   * The pool.
+   * The pool.  At any given time this will contain those resources which
+   * are not currently checked out and in use.
    */
   private BlockingQueue<T> pool;
+
+  /**
+   * All of the resources this pool manages.
+   */
+  private List<T> allResources;
 
   /**
    * Take a controller from the pool. This method will block if no
@@ -76,9 +85,11 @@ public class GateResourcePool<T extends Resource>  implements Iterable<T> {
     // can use an ArrayBlockingQueue as we'll never add more than
     // poolSize items to the queue
     pool = new ArrayBlockingQueue<T>(poolSize);
+    allResources = new ArrayList<T>(poolSize);
 
     log.debug("Using template resource as one member of pool");
     this.release(templateResource);
+    allResources.add(templateResource);
     poolSize--;
 
     while(poolSize > 0) {
@@ -86,6 +97,7 @@ public class GateResourcePool<T extends Resource>  implements Iterable<T> {
       @SuppressWarnings("unchecked")
       T newRes = (T)Factory.duplicate(templateResource);
       this.release(newRes);
+      allResources.add(newRes);
       poolSize--;
     }
   }
@@ -93,6 +105,15 @@ public class GateResourcePool<T extends Resource>  implements Iterable<T> {
   @Override
   public Iterator<T> iterator() {
     return pool.iterator();
+  }
+
+
+  public void interruptAll() {
+    for(Resource r : allResources) {
+      if(r instanceof Executable) {
+        ((Executable)r).interrupt();
+      }
+    }
   }
 
 }
