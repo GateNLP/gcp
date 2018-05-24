@@ -692,18 +692,19 @@ public class BatchRunner {
     log.info("Initial used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / MB) + "M");
 
     try {
+      Gate.runInSandbox(false);
       File gateHome = null;
       File gcpGate = new File(gcpHome, "gate-home");
       if(System.getProperty("gate.home") != null) {
         gateHome = new File(System.getProperty("gate.home"));
         Gate.setGateHome(gateHome);
       }
-      // use the site and user config files from gcp/gate-home even
-      // if we are using another location for the actual GATE home
-      // dir.
-      Gate.setSiteConfigFile(new File(gcpGate, "gate.xml"));
-      // we always set the user config file to the one in gcp gate
-      Gate.setUserConfigFile(new File(gcpGate, "user-gate.xml"));
+      if(System.getProperty("gate.user.config") != null) {
+        Gate.setUserConfigFile(new File(System.getProperty("gate.user.config")));
+      } else {
+        // Use a gcp-specific user config instead of the default home dir one
+        Gate.setUserConfigFile(new File(gcpGate, "user-gate.xml"));
+      }
       // we always set the session file to a non-existent file in gcpGate
       // This should never get created anyway since the user config
       // file we use disables the session file.
