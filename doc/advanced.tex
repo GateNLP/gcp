@@ -1,6 +1,6 @@
 \section{GATE Configuration}
 
-GCP uses its own GATE site and user configuration files, located in the
+By default GCP uses its own GATE user configuration file, located in the
 \verb!gate-home! directory under the GCP installation root directory.  It
 deliberately does not use the user's own \verb!~/.gate.xml!, so if you need to
 configure any options that must be set through configuration files you will
@@ -9,6 +9,9 @@ option that you will need to set this way is whether or not to add additional
 spaces to separate otherwise adjacent text in different XML or HTML elements
 when unpacking markup.  This is the \verb!Document_add_space_on_unpack! option
 in \verb!user-gate.xml!.
+
+If you want to use your own user configuration you can do so by setting the
+\verb|gate.user.config| system property.
 
 \section{JMX Monitoring}
 
