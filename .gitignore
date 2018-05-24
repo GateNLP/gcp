@@ -16,3 +16,7 @@ buildNumber.properties
 .settings
 .external*
 .project
+
+# IntelliJ things
+.idea/
+*.iml
