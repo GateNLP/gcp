@@ -20,6 +20,13 @@
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
     </fileSet>
+    <fileSet>
+      <directory>../doc</directory>
+      <outputDirectory>doc</outputDirectory>
+      <includes>
+        <include>gcp-guide.pdf</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
