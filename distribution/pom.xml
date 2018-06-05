@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.ac.gate</groupId>
   <artifactId>gcp-dist</artifactId>
-  <version>3.0-SNAPSHOT</version>
+  <version>3.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <url>http://gate.ac.uk/gcp</url>
 
@@ -43,13 +43,13 @@
     <dependency>
       <groupId>uk.ac.gate</groupId>
       <artifactId>gcp-impl</artifactId>
-      <version>3.0-SNAPSHOT</version>
+      <version>3.1-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>uk.ac.gate</groupId>
       <artifactId>gcp-cli</artifactId>
-      <version>3.0-SNAPSHOT</version>
+      <version>3.1-SNAPSHOT</version>
       <!-- easy way to separate this in the assembly descriptor -->
       <scope>provided</scope>
     </dependency>
