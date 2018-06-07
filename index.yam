@@ -1,0 +1,17 @@
+The GATE Cloud Paralleliser (GCP)
+
+GCP is a tool designed to support the execution of pipelines built using GATE
+Developer over large collections of thousands or millions of documents, using a
+multi-threaded architecture to make the best use of today's multi-core processors.
+
+GCP tasks or _batches_ are defined using an extensible XML syntax, describing
+the location and format of the input files, the GATE application to be run, and
+the kinds of outputs required. A number of standard input and output handlers
+are provided, but all the various components are pluggable so custom
+implementations can be used if the task requires it. GCP keeps track of the
+progress of each batch in a human- and machine-readable XML format, and is
+designed so that if a running batch is interrupted for any reason it can be
+re-run with the same settings and GCP will automatically continue from where it
+left off.
+
+A users' manual is available here: %(doc/gcp-guide.pdf, PDF).
