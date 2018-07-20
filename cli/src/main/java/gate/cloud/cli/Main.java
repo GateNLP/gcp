@@ -217,7 +217,7 @@ public class Main {
       } else if("-C".equals(args[i]) || "-p".equals(args[i])) {
         gcpOpts.add(args[i]);
         gcpOpts.add(args[++i]);
-      } else if(args[i].startsWith("-D")) {
+      } else if(args[i].startsWith("-D") || args[i].startsWith("-X")) {
         javaOpts.add(args[i]);
       } else {
         System.out.println("Unrecognised option " + args[i]);
