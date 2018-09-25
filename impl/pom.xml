@@ -55,6 +55,12 @@
       <artifactId>heritrix-commons</artifactId>
       <version>3.1.1</version>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>joda-time</groupId>
+          <artifactId>joda-time</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- JNA to extract process ID -->
