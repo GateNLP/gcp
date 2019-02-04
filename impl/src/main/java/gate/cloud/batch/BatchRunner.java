@@ -721,20 +721,6 @@ public class BatchRunner {
 
       Gate.init();
 
-      // If we run from gcp-direct, we try to load the Format_FastInfoset plugin.
-      // This is needed if we write to format finf and the application does not load the plugin,
-      // but also if we process finf format documents as input.
-      // If we cannot load the plugin here, the thread will log the error and continue which
-      // is good because the application could 
-      // still load the plugin later - with normal GCP, this would be the only way to use that format.      
-      if(invokedByGcpCli == false) {
-        try {
-          Gate.getCreoleRegister().registerPlugin(new Plugin.Maven("uk.ac.gate.plugins", "format-fastinfoset", gate.Main.version));
-        } catch(Exception e) {
-          log.warn("Couldn't load format-fastinfoset plugin, continuing anyway");
-        }
-      }
-
       // load any other plugins specified on the command line
       String[] pluginsToLoad = line.getOptionValues('p');
       if(pluginsToLoad != null) {
