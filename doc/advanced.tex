@@ -13,6 +13,45 @@ in \verb!user-gate.xml!.
 If you want to use your own user configuration you can do so by setting the
 \verb|gate.user.config| system property.
 
+\section{Maven settings}\label{sec:maven-settings}
+
+GATE (and thus GCP) use the standard Maven configuration mechanism to define
+things like the location of the ``local repository'' cache folder, additional
+Maven repositories to search for plugins, ``mirror'' repositories, HTTP proxy
+configuration, etc.  In the absence of any specific configuration GATE will
+look for plugins in the standard Central Repository, as well as the GATE team
+repository at \verb!http://repo.gate.ac.uk! (which is where nightly snapshot
+builds of the standard plugins are deployed), and will use the default Maven
+local repository cache in the folder \verb!.m2/repository! in the home
+directory of the user running GCP.  Additional configuration can be provided
+via a Maven settings file, which is read by default from
+\verb!.m2/settings.xml! but this location can be overridden by passing a system
+property \verb!M2_SETTINGS_XML!:
+\begin{lstlisting}[breaklines]
+java -jar gcp-cli.jar -DM2_SETTINGS_XML=m2/settings.xml -t 4 -m 2G -d control
+\end{lstlisting}
+
+The \verb!settings.xml! file is a standard Maven format documented at
+\url{https://maven.apache.org/settings.html}, the settings most useful to GCP
+are:
+\begin{itemize}
+\item \verb!localRepository! -- specify an alternative local repository cache
+  location instead of using one in the user's home directory.
+\item \verb!offline! -- if set to \verb!true!, this tells GATE not to attempt
+  to resolve any dependencies from the internet.  If the app refers to a plugin
+  that is not cached locally (in either the \verb!localRepository!, a cache
+  folder specified with the \verb!-C! option on the GCP command line, or a
+  \verb!maven-cache.gate!  folder alongside the saved application) then GCP
+  will fail to load the app.  This option can be useful when running
+  applications that were saved using the ``export for GATE Cloud'' tool in GATE
+  Developer, as this is intended to make them completely self-contained.
+\item \verb!proxies! -- can be used to configure HTTP proxy settings if these
+  are required to access remote repositories on the internet, however GATE also
+  respects the standard Java system properties for proxy configuration so it is
+  usually better to configure proxying using these rather than via Maven
+  settings.
+\end{itemize}
+
 \section{JMX Monitoring}
 
 The GCP batch runner registers an MBean with the platform JMX MBean server in

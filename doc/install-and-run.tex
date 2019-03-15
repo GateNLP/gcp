@@ -48,13 +48,6 @@ The CLI tool takes a number of optional arguments:
   \verb!-Djava.io.tmpdir=/home/bigtmp!.  \verb!-D! options specified before the
   \verb!-jar! apply to the virtual machine running the CLI, those specified
   after \verb!-jar gcp-cli.jar! will be passed to the batch runner processes.
-  If you have an installed copy of GATE Developer you may wish to set
-  \verb!-Dgate.home=...! to point to your installation (\emph{after} the
-  \verb!-jar!, as this is a setting that needs to apply to the batch runner
-  VM).  This is required if your saved GATE application refers to standard GATE
-  plugins (using \verb!$gatehome$! paths in the xgapp), but is optional if the
-  application is self-contained -- GCP includes its own copy of GATE Embedded
-  and does not require a separate installed copy of the core libraries.
 \ede
 
 GATE plugins can also be pre-loaded using the \verb!-C! and \verb!-p! options,
@@ -175,7 +168,10 @@ any other extension it already may have.
   plugin and its dependencies from a remote Maven repository.  If you have a local
   Maven cache of plugins on your disk you can specify its location with this option
   and the local cache will be searched first before attempting to download plugins
-  from the network.
+  from the network.  If you wish to completely disable loading of dependencies from
+  the network (e.g. if you are running on a machine that does not have internet
+  access) you will need to provide a custom Maven settings file as detailed in
+  section~\ref{sec:maven-settings}.
 \ede
 
 Additionally, you can specify \verb!-D! and \verb!-X! options which will be
