@@ -134,6 +134,19 @@ thread.
 
 This section summarises the main changes between releases of GCP
 
+\subsection{3.1 (June 2019)}
+
+Underlying GATE Embedded version is now 8.6.  Also upgraded commons-compress
+dependency (due to a security advisory).
+
+Note \verb!gcp-direct! mode no longer loads the FastInfoset format plugin
+automatically -- if you require FastInfoset you must use a saved application
+that includes the format plugin, or provide your own \verb!-p! option to load
+your preferred version, e.g.
+\begin{verbatim}
+-p uk.ac.gate.plugins:format-fastinfoset:8.5
+\end{verbatim}
+
 \subsection{3.0.1 (September 2018)}
 
 Minor bug fixes, and a couple of dependency upgrades to be compatible with the

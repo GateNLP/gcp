@@ -124,8 +124,9 @@ parameters using command line options to \verb!gcp-direct.sh!:
 \item[-x] the path to the saved GATE application that you want to run.
 \item[-f] the output format to use for saving results, must be either ``xml''
   (GATE XML format) or ``finf'' (FastInfoset format).  To use FastInfoset the
-  GATE \verb!Format_FastInfoset! plugin must be loaded by the saved
-  application.
+  GATE \verb!Format: FastInfoset! plugin must be loaded by the saved
+  application or by using \verb!-p uk.ac.gate.plugins:format-fastinfoset:8.5!
+  (see below).
 \item[-i] the directory in which to look for the input files or a file that contains
   relative path names to the input files. If this points to a directory, all files in
   this directory and any subdirectories will be processed (except for standard
