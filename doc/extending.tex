@@ -1,0 +1,145 @@
+GCP has been designed to be easily extensible.  Additional input/output
+handlers, naming strategies and document enumerators can be added by writing a
+Java class that implements the relevant interface and placing that class in a
+CREOLE plugin loaded by your application.  The class can then be named in your
+batch definitions as appropriate, and GCP will load it from the GATE
+ClassLoader.
+
+\section{Custom Input Handlers}\label{sec:extending:input}
+
+Input handlers must implement the \verb!gate.cloud.io.InputHandler! interface:
+
+\begin{lstlisting}[breaklines]
+public void config(Map<String, String> configData) throws IOException, GateException;
+public void init() throws IOException, GateException;
+public void close() throws IOException, GateException;
+
+public Document getInputDocument(String id) throws IOException, GateException;
+\end{lstlisting}
+
+The handler class must also have a no-argument constructor.  When GCP parses
+the batch definition it creates an instance of the handler class using that
+constructor, then calls the \verb!config! method, passing in a map containing
+the XML attribute values from the \verb!<input>! element in the batch file.  An
+additional ``virtual'' attribute named
+\verb!batchFileLocation!\footnote{Available as a constant
+{\tt gate.cloud.io.IOConstants.PARAM\_BATCH\_FILE\_LOCATION}} is also available
+in this map, containing the path to the XML batch definition file itself.  This
+is made available to allow the handler to resolve relative path expressions in
+other attribute values against the location of the XML file (see the standard
+handler implementations for examples of this).  The \verb!config! method should
+read any required parameters from the config map, and should throw a suitably
+descriptive \verb!GateException! if any required parameters are missing.
+
+Next, GCP will call the handler's \verb!init()! method.  This method is
+responsible for setting up the handler, and is where you should open any
+required external resources such as index files.  Both \verb!config! and
+\verb!init! are guaranteed to be called sequentially in a single thread.
+
+Conversely, \verb!getInputDocument! will be called by the processing threads,
+and must therefore be thread-safe.  However you should avoid locking or
+\verb!synchronized! blocks within \verb!getInputDocument! if at all possible,
+so as not to block processing threads against one another.  This method is the
+one responsible for actually loading the GATE Document corresponding to a given
+document ID.  The handler does not need to (indeed should not) retain a
+reference to the document that it returns, as the processing thread is
+responsible for freeing the document with \verb!Factory.deleteResource! when
+processing is complete.
+
+Finally, the \verb!close! method will be called (in a single thread) when the
+entire batch is complete.  This is where you should release resources that were
+acquired in the \verb!init! method.
+
+It is good manners, though not strictly required, for input handlers to provide
+a meaningful \verb!toString()! implementation.
+
+\section{Custom Output Handlers}
+
+Output handlers must implement the \verb!gate.cloud.io.OutputHandler!
+interface:
+
+\begin{lstlisting}[breaklines]
+public void setAnnSetDefinitions(List<AnnotationSetDefinition> annotationsToSave);
+public List<AnnotationSetDefinition> getAnnSetDefinitions();
+
+public void config(Map<String, String> configData) throws IOException, GateException;
+public void init() throws IOException, GateException;
+public void close() throws IOException, GateException;
+
+public void outputDocument(Document document, String documentId) throws IOException, GateException;
+\end{lstlisting}
+
+GCP will instantiate the handler class and call \verb!config! exactly as for
+input handlers (see section~\ref{sec:extending:input}).  It will then call
+\verb!setAnnSetDefinitions! to pass in the annotation set definitions specified
+by the \verb!<annotationSet>! elements in the XML (if any), and then call
+\verb!init!.  As before these three methods are called in sequence in a single
+thread.
+
+As documents are processed, the various processing threads will call
+\verb!outputDocument!, passing an annotated document as a parameter.  This
+method must therefore be thread-safe, but should avoid synchronization and
+locking if at all possible.
+
+Finally, the \verb!close! method will be called (in a single thread) when the
+entire batch is complete.  This is where you should release resources that were
+acquired in the \verb!init! method.
+
+It is good manners, though not strictly required, for output handlers to
+provide a meaningful \verb!toString()! implementation.
+
+GCP provides an abstract base class \verb!gate.cloud.io.AbstractOutputHandler!
+which custom output handler implementations may choose to extend.  This class
+provides an implementation of the \verb!get! and \verb!setAnnSetDefinitions!
+methods, and a utility method to extract the annotations corresponding to these
+definitions from an annotated document at output time.
+
+\section{Custom Naming Strategies}
+
+Custom naming strategies (for use with the file-based input and output
+handlers) must implement the \verb!gate.cloud.io.file.NamingStrategy!
+interface:
+
+\begin{lstlisting}[breaklines]
+public void config(boolean isOutput, Map<String, String> configData) throws IOException, GateException;
+
+public File toFile(String id) throws IOException;
+\end{lstlisting}
+
+The \verb!config! method is similar to the equivalent method on input and
+output handlers, but it has an extra parameter indicating whether this naming
+strategy is being used by an input (false) or output (true) handler.  This
+allows the strategy to adjust its behaviour as appropriate, for example in the
+input case it is an error if the specified base directory does not exist,
+whereas for output this is permitted as the output handler will create
+intermediate directories as required.
+
+The \verb!toFile! method will be called from processing threads by the input
+(or output) handler that uses this strategy, and should return the
+\verb!java.io.File! that corresponds to the given document ID.
+
+
+\section{Custom Document Enumerators}
+
+Document enumerators must implement the \verb!gate.cloud.io.DocumentEnumerator!
+interface:
+
+\begin{lstlisting}[breaklines, texcl]
+public void config(Map<String, String> configData) throws IOException, GateException;
+public void init() throws IOException, GateException;
+
+// DocumentEnumerator extends java.util.Iterator$<$String$>$
+public boolean hasNext();
+public String next();
+public void remove();
+\end{lstlisting}
+
+They have the familiar \verb!config! and \verb!init! methods which are called
+as for input and output handlers (see section~\ref{sec:extending:input}).  To
+actually enumerate documents GCP uses the standard \verb!Iterator<String>!
+methods, the enumerator is expected to return one ID from each call to
+\verb!next!.  The \verb!remove! method is specified by the Iterator interface
+but will never be called by GCP, the standard enumerators all implement this
+method to throw an \verb!UnsupportedOperationException!.
+
+% vim:ft=tex

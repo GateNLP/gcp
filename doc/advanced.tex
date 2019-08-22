@@ -1,0 +1,47 @@
+\section{GATE Configuration}
+
+GCP uses its own GATE site and user configuration files, located in the
+\verb!gate-home! directory under the GCP installation root directory.  It
+deliberately does not use the user's own \verb!~/.gate.xml!, so if you need to
+configure any options that must be set through configuration files you will
+need to edit \verb!gate-home/user-gate.xml!.  The most likely configuration
+option that you will need to set this way is whether or not to add additional
+spaces to separate otherwise adjacent text in different XML or HTML elements
+when unpacking markup.  This is the \verb!Document_add_space_on_unpack! option
+in \verb!user-gate.xml!.
+
+\section{JMX Monitoring}
+
+The GCP batch runner registers an MBean with the platform JMX MBean server in
+its JVM that makes it possible to query the state of the running batch from the
+JMX management console or (using the standard JMX APIs) from another Java
+process.  The process of connecting a JMX client to the GCP process is beyond
+the scope of thie guide, here we simply describe the MBean interface and the
+attributes it exposes to clients.
+
+The MBean implements the \verb!gate.cloud.batch.BatchJobData! interface:
+
+\begin{lstlisting}[breaklines]
+public JobState getState();
+public int getProcessedDocumentCount();
+public int getTotalDocumentCount();
+public int getRemainingDocumentCount();
+public int getSuccessDocumentCount();
+public int getErrorDocumentCount();
+public long getStartTime();
+public String getBatchId();
+public long getTotalDocumentLength();
+public long getTotalFileSize();
+\end{lstlisting}
+
+The \verb!getState()! method returns the current state of the batch.  The state
+is an enum type, and will usually be \verb!JobState.RUNNING!.  The various
+\verb!get*DocumentCount! methods provide access to the number of documents that
+have been processed, the number of those that were successful/failed and the
+number remaining to be processed.  This allows the monitoring process to check
+that the GCP process is not ``stuck''.  The \verb!getTotalDocumentLength! and
+\verb!getTotalFileSize! methods give the total length of the documents
+processed (in plain text characters, after GATE has unpacked the markup) and
+the total size (in bytes) of the files processed so far.
+
+% vim:ft=tex

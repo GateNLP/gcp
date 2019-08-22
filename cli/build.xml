@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- $Id: build.xml 14422 2011-10-24 14:59:55Z ian_roberts $ -->
+<project name="GCP-cli" default="jar" basedir=".">
+  <property name="cli.src.dir" location="src" />
+  <property name="cli.classes.dir" location="classes" />
+  <property name="cli.jar.location" location="../gcp-cli.jar" />
+
+  <!-- create build directory structure -->
+  <target name="prepare">
+    <mkdir dir="${cli.classes.dir}" />
+  </target>
+
+  <!-- compile the source -->
+  <target name="compile" depends="prepare">
+    <javac srcdir="${cli.src.dir}"
+           destdir="${cli.classes.dir}"
+           debug="true"
+           debuglevel="lines,source"
+           source="1.5" target="1.5" />
+  </target>
+
+  <!-- create the JAR file -->
+  <target name="jar" depends="compile" >
+    <jar destfile="${cli.jar.location}"
+         update="false"
+         basedir="${cli.classes.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="gate.cloud.cli.Main" />
+      </manifest>
+    </jar>
+  </target>
+
+  <!-- remove the generated .class files -->
+  <target name="clean.classes" >
+    <delete dir="${cli.classes.dir}" />
+  </target>
+
+  <!-- Clean up - remove .class and .jar files -->
+  <target name="clean" depends="clean.classes" >
+    <delete file="${cli.jar.location}" />
+  </target>
+
+</project>

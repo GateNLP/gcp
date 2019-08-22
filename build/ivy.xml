@@ -1,0 +1,34 @@
+<ivy-module version="2.0">
+
+  <info
+    organisation="uk.ac.gate"
+    module="gcp"
+    revision="2.9-SNAPSHOT">
+    <description homepage="http://gate.ac.uk/gcp" />
+  </info>
+
+  <configurations>
+    <conf name="default" />
+  </configurations>
+
+  <dependencies defaultconf="*->master(default),runtime(default)" >
+    <!-- GATE -->
+    <dependency name="gate-core" org="uk.ac.gate" rev="8.4.2-SNAPSHOT">
+      <artifact name="gate-core" type="jar" />
+    </dependency>
+  
+    <dependency org="commons-httpclient" name="commons-httpclient" rev="3.0.1" >
+        <artifact name="commons-httpclient" type="jar" />
+    </dependency>
+
+    <dependency org="org.archive.heritrix" name="heritrix-commons" rev="3.1.1" >
+        <artifact name="heritrix-commons" type="jar" />
+    </dependency>
+    
+    <!-- JNA for PID extraction -->
+    <dependency org="net.java.dev.jna" name="jna" rev="4.0.0" />
+    
+    <!-- commons-compress for unzip/bz2/xz/etc -->
+    <dependency org="org.apache.commons" name="commons-compress" rev="1.9" />
+  </dependencies>
+</ivy-module>

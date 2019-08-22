@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<!-- $Id: build.xml 20198 2017-02-23 16:42:54Z ian_roberts $ -->
+<project name="GCP" default="jar" basedir="."  xmlns:ivy="antlib:org.apache.ivy.ant">
+  <description>
+      GATE Cloud Paralleliser
+      A tool for processing batches of documents by running multiple copies
+      of a GATE application in parallel threads.
+  </description>
+  <property name="build.sysclasspath" value="ignore" />
+  <property name="version" value="2.9-SNAPSHOT" />
+  
+  <property name="src.dir" location="src" />
+  <property name="classes.dir" location="classes" />
+  <property name="cli.dir" location="cli" />
+  <property name="build.dir" location="build" />
+  <property name="jar.location" location="gcp.jar" />
+
+  <!-- Load Ivy support -->
+  <property name="build.dir" location="build" />
+  <path id="ivy.lib.path">
+      <fileset dir="${build.dir}" includes="*.jar"/>
+  </path>
+  
+  <taskdef resource="org/apache/ivy/ant/antlib.xml"
+           uri="antlib:org.apache.ivy.ant"
+           classpathref="ivy.lib.path"/>  
+
+  <target name="depend">
+    <ivy:configure file="${build.dir}/ivysettings.xml"/>
+    <ivy:resolve file="${build.dir}/ivy.xml" log="download-only"/>
+    <ivy:cachepath pathid="ivylibs"/>
+    <mkdir dir="report" />
+    <ivy:report todir="report" graph="false" />
+  </target>
+  
+  <!-- Path to compile - includes local libs and GATE ones -->
+  <path id="compile.classpath">
+    <fileset dir="lib" includes="*.jar" />
+    <path refid="ivylibs" />
+  </path>
+  
+  <!-- create build directory structure -->
+  <target name="prepare">
+    <mkdir dir="${classes.dir}" />
+  </target>
+
+  <!-- compile the source -->
+  <target name="compile" depends="prepare, depend">
+    <javac classpathref="compile.classpath"
+           srcdir="${src.dir}"
+           destdir="${classes.dir}"
+           debug="true"
+           debuglevel="lines,source"
+           source="1.7" target="1.7" />
+  </target>
+
+  <!-- create the JAR file -->
+  <target name="jar" depends="compile" >
+    <jar destfile="${jar.location}"
+         update="false"
+         basedir="${classes.dir}" />
+  </target>
+
+  <!-- remove the generated .class files -->
+  <target name="clean.classes" >
+    <delete dir="${classes.dir}" />
+  </target>
+
+  <!-- Clean up - remove .class and .jar files -->
+  <target name="clean" depends="clean.classes" >
+    <delete file="${jar.location}" />
+    <ant dir="${cli.dir}" target="clean" />
+  </target>
+
+  <target name="cli.jar">
+    <ant dir="${cli.dir}" target="jar" />
+  </target>
+
+  <target name="distro" depends="clean,jar,cli.jar">
+    <delete file="gcp-dist-${version}.zip" />
+    <ivy:cachefileset setid="ivydeps" />
+    <zip destfile="gcp-dist-${version}.zip">
+      <zipfileset file="gcp.jar"  prefix="gcp-${version}/lib"/>
+      <zipfileset file="dist/gcp.sh" filemode="755" prefix="gcp-${version}"/>
+      <zipfileset file="gcp-cli.jar" filemode="755" prefix="gcp-${version}"/>
+      <zipfileset file="gcp-direct.sh" filemode="755" prefix="gcp-${version}"/>
+      <zipfileset dir="lib" includes="*.jar" prefix="gcp-${version}/lib"/>
+      <mappedresources>
+        <mappedresources>
+          <fileset refid="ivydeps"/>
+          <flattenmapper/>
+        </mappedresources>
+        <globmapper from="*.jar" to="gcp-${version}/lib/*.jar"/>
+      </mappedresources>
+      <zipfileset dir="conf"  prefix="gcp-${version}/conf"/>
+      <zipfileset dir="gate-home"  prefix="gcp-${version}/gate-home"/>
+      <zipfileset dir="doc"  prefix="gcp-${version}/doc"/>  
+    </zip>
+  </target>
+  
+</project>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+ A GATE Cloud Batch descriptor. 
+ All  values for file-path attributes (i.e. attributes named dir or file)
+ are either an absolute path, or a path relative to this XML file.
+-->
+<batch id="batch-0001" xmlns="http://gate.ac.uk/ns/cloud/batch/1.0">
+  <!-- There can be only one input specification -->
+  <input dir="input-files"
+         mimeType="text/html"
+         compression="none"
+         encoding="UTF-8"
+         class="gate.cloud.io.file.FileInputHandler" />
+
+  <!-- Output handler to save the text only, uncompressed -->
+  <output dir="output-files-xces"
+          compression="none"
+          encoding="UTF-8"
+          fileExtension=".txt"
+          class="gate.cloud.io.file.PlainTextOutputHandler">
+  </output>
+
+  <!-- Output handler to save some of the ANNIE annotations as XCES,
+       all in one compressed file -->
+  <output dir="output-files-xces"
+          compression="gzip"
+          encoding="UTF-8"
+          fileExtension=".ANNIE.xml.gz"
+          class="gate.cloud.io.xces.XCESOutputHandler">
+    <annotationSet name="">
+      <annotationType name="Person"/>
+      <annotationType name="Location"/>
+      <annotationType name="Organization"/>
+    </annotationSet>
+  </output>
+
+  <!-- Output handler to save a GATE Xml copy of the processed document-->
+  <output dir="output-files-gate"
+          compression="gzip"
+          encoding="UTF-8"
+          fileExtension=".GATE.xml.gz"
+          class="gate.cloud.io.file.GATEStandOffFileOutputHandler">
+    <!-- We save all the annotation sets, so we don't include any filters here. -->
+  </output>
+
+  <!-- Output handler to save ANNIE annotations as inline XML -->
+  <output dir="output-files-inline"
+          compression="none"
+          encoding="UTF-8"
+          fileExtension=".xml"
+          class="gate.cloud.io.file.GATEInlineOutputHandler">
+    <!-- If no types are specified, all annotations from the set are saved.
+         If no name is specified for the annotation set, then the default
+         anntoation set is used (in GATE terms). -->
+    <annotationSet />
+
+  </output>
+
+  <output dir="output-files-json"
+          compression="gzip"
+          encoding="UTF-8"
+          fileExtension=".json.gz"
+          class="gate.cloud.io.file.JSONOutputHandler">
+    <annotationSet>
+      <annotationType name="Person"/>
+      <annotationType name="Location"/>
+      <annotationType name="Organization"/>
+    </annotationSet>
+  </output>
+
+  <!-- Send documents to a Mimir indexing server.  This output handler always
+       sends the whole document to the server - annotationSet elements are
+       ignored. The username and password attributes are optional - if
+       specified they will be used as credentials for HTTP basic authentication
+       when contacting the Mimir server. -->
+  <!--
+  <output indexUrl="http://mimir.example.com/cloud-index-001"
+          namespace="urn:gatecloud.net:"
+          username="manager"
+          password="changeme"
+          class="gate.cloud.io.mimir.MimirOutputHandler" />
+  -->
+
+  <!-- The GATE application used for processing the input documents. -->	
+  <!--<application file="../annie.xgapp"/>-->
+  <application file="../../../gate/plugins/ANNIE/ANNIE_with_defaults.gapp" />
+
+  <!-- The XML file where the processing report will be written to. -->	
+  <report file="report-batch-test-0001.xml"/>
+
+  <!-- 
+  A list of document IDs. 
+  Supplied IDs must be unique within this list!
+  The IDs are sent to the input handler as they are; it is up the input handler
+  to interpret them as desired (for example, the gate.cloud.io.file.FileInputHandler
+  implementation treats document IDs as a /-separated path, relative to the top
+  directory).
+  -->
+  <documents>
+    <!-- You can mix explicit document IDs and enumerators -->
+  
+    <!-- Commented out and replaced by the enumerator below 
+    <id>ft/03082001.html</id>
+    <id>gu/04082001.html</id>
+    <id>in/09082001.html</id>
+    -->
+    
+    <documentEnumerator dir="input-files"
+      includes="**/*.xml **/*.html"
+      class="gate.cloud.io.file.FileDocumentEnumerator"
+      />
+    <!-- In the enumerator above, you could also add a prefix to all the IDs 
+          produced by using a prefix attribute like this: 
+      prefix="alternative/root/folder/" --> 
+  </documents>
+
+</batch>

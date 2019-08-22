@@ -1,0 +1,46 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[10pt, a4paper, twoside]{report}
+\input{preamble}
+\begin{document}
+\title{{\Huge {\textsc{The GATECloud Paralleliser (GCP)}}}\\
+Large-scale multi-threaded processing with GATE Embedded \\
+{\small version 2.9-SNAPSHOT}
+}
+\author{Ian Roberts, Valentin Tablan\\GATE Team}
+
+\thispagestyle{empty}
+\maketitle
+
+
+\clearpage
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\thispagestyle{empty}
+\cleardoublepage
+
+\pagestyle{fancy}
+\fancyhead{} %clear all headings
+\fancyhead[RO,LE]{GCP}
+\fancyhead[LO, RE]{A User's Guide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% main %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}\label{chap:intro}
+\input{introduction}
+
+\chapter{Installing and Running GCP}\label{chap:install}
+\input{install-and-run}
+
+\chapter{The Batch Definition File}\label{chap:batch-def}
+\input{batch-def}
+
+\chapter{Extending GCP}\label{chap:extending}
+\input{extending}
+
+\chapter{Advanced Topics}\label{chap:advanced}
+\input{advanced}
+
+\end{document}

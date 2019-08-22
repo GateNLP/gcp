@@ -1,0 +1,12 @@
+<ivysettings>
+  <settings defaultResolver="default"/>
+  <resolvers>
+    <chain name="default" returnFirst="true">
+      <ibiblio name="maven-central" m2compatible="true" />
+      <ibiblio name="gate.ac.uk" m2compatible="true" 
+        root="http://repo.gate.ac.uk/content/groups/public/" />
+      <ibiblio name="org.archive.heritrix" m2compatible="true" 
+        root="http://builds.archive.org:8080/maven2/" />        
+    </chain>
+  </resolvers>
+</ivysettings>

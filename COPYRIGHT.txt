@@ -1,0 +1,5 @@
+This GATE software is Copyright (c) The University of Sheffield 1995-2012.
+
+Note that all contributors (committers on the source tree and suppliers of
+patches) are considered to have assigned the copyright of their contributions
+to The University of Sheffield.
