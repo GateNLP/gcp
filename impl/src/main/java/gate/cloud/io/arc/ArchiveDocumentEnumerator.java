@@ -7,7 +7,7 @@
  *  Version 3, November 2007.
  *
  *
- *  $Id: ArchiveDocumentEnumerator.java 20268 2017-09-30 22:17:03Z ian_roberts $ 
+ *  $Id: ArchiveDocumentEnumerator.java 20268 2017-09-30 22:17:03Z ian_roberts $
  */
 package gate.cloud.io.arc;
 
@@ -17,17 +17,14 @@ import static gate.cloud.io.IOConstants.PARAM_EXCLUDE_STATUS_CODES;
 import static gate.cloud.io.IOConstants.PARAM_INCLUDE_STATUS_CODES;
 import static gate.cloud.io.IOConstants.PARAM_MIME_TYPES;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
+import gate.cloud.util.SimpleArrayMap;
 import org.apache.log4j.Logger;
 import org.archive.io.ArchiveReader;
 import org.archive.io.ArchiveRecord;
@@ -60,47 +57,47 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
    * file.
    */
   protected File batchDir;
-  
+
   /**
    * Regular expression matching status codes that should be included.
    */
   protected Pattern includeStatusCodes;
-  
+
   /**
    * Regular expression matching status codes that should be excluded.
    */
   protected Pattern excludeStatusCodes;
-  
+
   /**
    * The next ID (if any) to be returned from the iterator.
    */
   protected DocumentID next;
-  
+
   /**
    * The source archive file we are enumerating.
    */
   protected File srcFile;
-  
+
   /**
    * Archive file reader used to scan the archive.
    */
   protected ArchiveReader reader;
-  
+
   /**
    * Iterator obtained from the ARC reader.
    */
   protected Iterator<ArchiveRecord> archiveIterator;
-  
+
   /**
    * Index into the archive of the current record.
    */
   protected int inputSequence;
-  
+
   /**
    * DecimalFormat used to pad sequence numbers to at least 6 digits.
    */
   protected DecimalFormat numberPaddingFormat;
-  
+
   public void config(Map<String, String> configData) {
     String batchFileStr = configData.get(PARAM_BATCH_FILE_LOCATION);
     if(batchFileStr != null) {
@@ -133,7 +130,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
     if(mimeTypesStr != null && mimeTypesStr.length() > 0) {
       mimeTypes = mimeTypesStr.split("\\s+");
     }
-    
+
     // status codes
     String includeStatusCodesStr = configData.get(PARAM_INCLUDE_STATUS_CODES);
     if(includeStatusCodesStr != null && includeStatusCodesStr.length() > 0) {
@@ -169,7 +166,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
       reader.close();
     }
   }
-  
+
   protected abstract ArchiveReader createReader() throws IOException;
 
   public boolean hasNext() {
@@ -186,7 +183,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
     throw new UnsupportedOperationException(this.getClass().getName()
             + " does not support element removal");
   }
-  
+
   protected void moveToNext() {
     logger.debug("moveToNext: archiveIterator = " + archiveIterator);
     while(archiveIterator != null && archiveIterator.hasNext()) {
@@ -216,15 +213,14 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
               // check the mime type, if required
               if(mimeTypes == null || interestingMimeType(record)) {
                 // found a good document
-                Object2ObjectArrayMap<String, String> attrs = 
-                    new Object2ObjectArrayMap<String, String>(new String[3],
-                        new String[3]);
-                attrs.put(ArchiveInputHandler.RECORD_OFFSET_ATTR, 
-                  Long.toString(record.getHeader().getOffset()));
-                attrs.put(ArchiveInputHandler.RECORD_LENGTH_ATTR, 
-                  Long.toString(recordLength));
-                attrs.put(ArchiveInputHandler.RECORD_POSITION_ATTR, 
-                  Long.toString(inputSequence));
+                Map<String, String> attrs = new SimpleArrayMap<>(
+                        new String[] {ArchiveInputHandler.RECORD_OFFSET_ATTR,
+                                ArchiveInputHandler.RECORD_LENGTH_ATTR,
+                                ArchiveInputHandler.RECORD_POSITION_ATTR},
+                        new String[] {Long.toString(record.getHeader().getOffset()),
+                                Long.toString(recordLength),
+                                Long.toString(inputSequence)}
+                );
                 next = new DocumentID(record.getHeader().getUrl(), attrs);
                 logger.debug("Found valid ID " + next);
                 return;
@@ -254,7 +250,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
       }
     }
   }
-  
+
   /**
    * Check whether the mime type of the given record is "interesting", i.e. if
    * any of the {@link #mimeTypes} is a prefix of this record's type.
@@ -270,7 +266,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
     }
     return false;
   }
-  
+
   protected abstract String mimeType(ArchiveRecord record);
 
   protected abstract String statusCode(ArchiveRecord record);

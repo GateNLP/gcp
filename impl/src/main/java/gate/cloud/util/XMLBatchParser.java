@@ -24,8 +24,6 @@ import gate.cloud.io.IOConstants;
 import gate.util.GateException;
 import gate.util.persistence.PersistenceManager;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -368,12 +366,13 @@ public class XMLBatchParser{
         Map<String, String> docIdAttrs = null;
         int attrCount = xsr.getAttributeCount(); 
         if(attrCount > 0) {
-          docIdAttrs = new Object2ObjectArrayMap<String, String>(
-              new String[attrCount], new String[attrCount]);
+          String[] attrNames = new String[attrCount];
+          String[] attrValues = new String[attrCount];
           for(int i = 0; i< attrCount; i++) {
-            docIdAttrs.put(xsr.getAttributeName(i).toString(), 
-              xsr.getAttributeValue(i));
+            attrNames[i] = xsr.getAttributeName(i).toString();
+            attrValues[i] = xsr.getAttributeValue(i);
           }
+          docIdAttrs = new SimpleArrayMap<>(attrNames, attrValues);
         }
         String documentIdText = xsr.getElementText();
         docIDsOrSpecs.add(new DocumentID(documentIdText, docIdAttrs));
