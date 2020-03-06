@@ -35,17 +35,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -54,6 +49,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -110,7 +107,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class JSONStreamingInputHandler implements StreamingInputHandler {
 
-  private static Logger logger = Logger
+  private static Logger logger = LoggerFactory
           .getLogger(JSONStreamingInputHandler.class);
 
   public DocumentData getInputDocument(DocumentID id) throws IOException,
@@ -214,8 +211,8 @@ public class JSONStreamingInputHandler implements StreamingInputHandler {
   public void startBatch(Batch b) {
     completedDocuments = b.getCompletedDocuments();
     if(completedDocuments != null && completedDocuments.size() > 0) {
-      logger.info("Restarting failed batch - " + completedDocuments.size()
-              + " documents already processed");
+      logger.info("Restarting failed batch - {} documents already processed",
+              completedDocuments.size());
     }
   }
 
@@ -310,7 +307,7 @@ public class JSONStreamingInputHandler implements StreamingInputHandler {
         // can't find an ID, assume this is a "delete" or similar and
         // ignore it
         if(logger.isDebugEnabled()) {
-          logger.debug("No ID found in JSON object " + json + " - ignored");
+          logger.debug("No ID found in JSON object {} - ignored", json);
         }
       } else if(completedDocuments.contains(id)) {
         // already processed, ignore

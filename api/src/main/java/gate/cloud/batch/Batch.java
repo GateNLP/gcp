@@ -16,6 +16,8 @@ import gate.cloud.io.InputHandler;
 import gate.cloud.io.OutputHandler;
 import gate.cloud.util.Tools;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -40,8 +42,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.stream.events.XMLEvent;
 
-import org.apache.log4j.Logger;
-
 /**
  * Class representing a cloud batch job.
  */
@@ -59,7 +59,7 @@ public class Batch {
   /**
    * Log4J logger.
    */
-  private static Logger logger = Logger.getLogger(Batch.class);
+  private static Logger logger = LoggerFactory.getLogger(Batch.class);
 
   private static XMLOutputFactory staxOutputFactory = 
       XMLOutputFactory.newInstance();

@@ -25,12 +25,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import gate.cloud.util.SimpleArrayMap;
-import org.apache.log4j.Logger;
 import org.archive.io.ArchiveReader;
 import org.archive.io.ArchiveRecord;
 import gate.cloud.batch.DocumentID;
 import gate.cloud.io.DocumentEnumerator;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Enumerator to build a list of document IDs from an ARC or WARC file. The
@@ -40,7 +41,7 @@ import gate.util.GateException;
  */
 public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
 
-  private static Logger logger = Logger.getLogger(ArchiveDocumentEnumerator.class);
+  private static Logger logger = LoggerFactory.getLogger(ArchiveDocumentEnumerator.class);
 
   /**
    * By default, exclude any 3xx, 4xx or 5xx status codes.
@@ -151,7 +152,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
 
   public void init() throws IOException, GateException {
     numberPaddingFormat = new DecimalFormat("000000");
-    logger.debug("Enumerating file " + srcFile.getAbsolutePath());
+    logger.debug("Enumerating file {}", srcFile.getAbsolutePath());
     reader = createReader();
     archiveIterator = reader.iterator();
     inputSequence = 0;
@@ -185,7 +186,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
   }
 
   protected void moveToNext() {
-    logger.debug("moveToNext: archiveIterator = " + archiveIterator);
+    logger.debug("moveToNext: archiveIterator = {}", archiveIterator);
     while(archiveIterator != null && archiveIterator.hasNext()) {
       try {
         ArchiveRecord record = nextRecord(archiveIterator);
@@ -198,7 +199,7 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
         long recordLength = record.getHeader().getLength();
         int recordBodyLength = (int)(recordLength - recordContentBegin);
         // ignore zero-length records
-        logger.debug("Found archive record total length: " + recordLength + ", content begin: " + recordContentBegin + ", body length: " + recordBodyLength);
+        logger.debug("Found archive record total length: {}, content begin: {}, body length: {}", recordLength, recordContentBegin, recordBodyLength);
         if(recordBodyLength > 0) {
           String statusCode = statusCode(record);
           if(statusCode == null) {
@@ -222,16 +223,16 @@ public abstract class ArchiveDocumentEnumerator implements DocumentEnumerator {
                                 Long.toString(inputSequence)}
                 );
                 next = new DocumentID(record.getHeader().getUrl(), attrs);
-                logger.debug("Found valid ID " + next);
+                logger.debug("Found valid ID {}", next);
                 return;
               } else {
                 logger.debug("Not an interesting mime type");
               }
             } else {
-              logger.debug("Status code " + statusCode + " matched by excludes");
+              logger.debug("Status code {} matched by excludes", statusCode);
             }
           } else {
-            logger.debug("Status code " + statusCode + " not matched by includes");
+            logger.debug("Status code {} not matched by includes", statusCode);
           }
         }
       } finally {

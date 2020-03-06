@@ -15,13 +15,14 @@ import gate.Executable;
 import gate.Factory;
 import gate.Resource;
 import gate.creole.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-
-import org.apache.log4j.Logger;
 
 /**
  * Class representing a pool of independent but equivalent GATE
@@ -30,7 +31,7 @@ import org.apache.log4j.Logger;
 public class GateResourcePool<T extends Resource>  implements Iterable<T> {
   private static int uniqueNumber = 1;
   
-  private static final Logger log = Logger.getLogger(GateResourcePool.class);
+  private static final Logger log = LoggerFactory.getLogger(GateResourcePool.class);
 
   /**
    * The pool.  At any given time this will contain those resources which
@@ -77,7 +78,7 @@ public class GateResourcePool<T extends Resource>  implements Iterable<T> {
    */
   public void fillPool(T templateResource, int poolSize)
           throws ResourceInstantiationException {
-    log.debug("Filling pool with " + poolSize + " copies of template resource");
+    log.debug("Filling pool with {} copies of template resource", poolSize);
     if(poolSize == 0) {
       pool = new ArrayBlockingQueue<T>(1);
       return;

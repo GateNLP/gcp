@@ -29,12 +29,12 @@ import java.util.concurrent.Executors;
 import java.util.function.ToIntFunction;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.log4j.Logger;
-
 import gate.Gate;
 import gate.cloud.batch.DocumentID;
 import gate.cloud.io.IOConstants;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper for streaming output handlers that want to write to a series of chunk files.
@@ -55,7 +55,7 @@ public class StreamingFileOutputHelper<TItem, TWriter extends AutoCloseable> {
   }
   
   private static final Logger logger =
-      Logger.getLogger(StreamingFileOutputHelper.class);
+      LoggerFactory.getLogger(StreamingFileOutputHelper.class);
 
   protected String pattern;
 

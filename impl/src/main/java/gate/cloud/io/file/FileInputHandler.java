@@ -23,13 +23,13 @@ import gate.cloud.io.InputHandler;
 import gate.cloud.util.GZIPURLStreamHandler;
 import gate.cloud.util.SnappyURLStreamHandler;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
 
 
 /**
@@ -39,7 +39,7 @@ import org.apache.log4j.Logger;
  */
 public class FileInputHandler implements InputHandler {
   
-  private static Logger logger = Logger.getLogger(FileInputHandler.class);
+  private static Logger logger = LoggerFactory.getLogger(FileInputHandler.class);
   
   /**
    * The file naming strategy used by this input handler.
@@ -128,7 +128,7 @@ public class FileInputHandler implements InputHandler {
       params.put(Document.DOCUMENT_REPOSITIONING_PARAMETER_NAME, Boolean.TRUE);
     }
     
-    logger.debug("Loading document from file " + docFile);
+    logger.debug("Loading document from file {}", docFile);
 
     DocumentData docData = new DocumentData(
             (Document)Factory.createResource("gate.corpora.DocumentImpl",

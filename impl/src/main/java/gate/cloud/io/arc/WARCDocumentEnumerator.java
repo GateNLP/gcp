@@ -16,19 +16,20 @@ import java.util.Iterator;
 import java.util.regex.Pattern;
 
 import org.apache.commons.httpclient.Header;
-import org.apache.log4j.Logger;
 import org.archive.io.ArchiveReader;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.HeaderedArchiveRecord;
 import org.archive.io.warc.WARCReaderFactory;
 import org.archive.io.warc.WARCRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Enumerator to build a list of document IDs from a WARC file.
  */
 public class WARCDocumentEnumerator extends ArchiveDocumentEnumerator {
   
-  private static Logger logger = Logger.getLogger(WARCDocumentEnumerator.class);
+  private static Logger logger = LoggerFactory.getLogger(WARCDocumentEnumerator.class);
 
   // some non-Heritrix-produced WARC files have slightly different spacing in the mime type
   protected static final Pattern HTTP_RESPONSE_MIMETYPE_PATTERN = Pattern.compile("(?i)application/http;\\s*msgtype=response");
@@ -42,7 +43,7 @@ public class WARCDocumentEnumerator extends ArchiveDocumentEnumerator {
   protected ArchiveRecord nextRecord(Iterator<ArchiveRecord> it) {
     WARCRecord record = (WARCRecord)it.next();
     if(!HTTP_RESPONSE_MIMETYPE_PATTERN.matcher(record.getHeader().getMimetype()).matches()) {
-      logger.debug("WARC record mimetype was " + record.getHeader().getMimetype() + ", ignored");
+      logger.debug("WARC record mimetype was {}, ignored", record.getHeader().getMimetype());
       return null;
     }
     try {

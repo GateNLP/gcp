@@ -25,6 +25,8 @@ import gate.creole.ExecutionInterruptedException;
 import gate.creole.ResourceInstantiationException;
 import gate.util.Benchmark;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,8 +38,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.stream.XMLOutputFactory;
-
-import org.apache.log4j.Logger;
 
 /**
  * Multi-threaded implementation of a processor for documents.
@@ -54,7 +54,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
 
 
   private static final Logger log =
-          Logger.getLogger(PooledDocumentProcessor.class);
+          LoggerFactory.getLogger(PooledDocumentProcessor.class);
 
   private static int uniqueNumber = 1;
 
@@ -180,7 +180,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
    * success or failure to the output queue.
    */
   public void processDocument(final DocumentID documentId) {
-    log.debug("processDocument called for ID " + documentId);
+    log.debug("processDocument called for ID {}", documentId);
     try {
       final CorpusController controller = appPool.take();
       if(controller != null) {
@@ -189,14 +189,14 @@ public class PooledDocumentProcessor implements DocumentProcessor {
             DocumentData docData = null;
             try {
               try {
-                log.debug("Loading document " + documentId);
+                log.debug("Loading document {}", documentId);
                 docData =  inputHandler.getInputDocument(documentId);
-                log.debug("processing document " + documentId);
+                log.debug("processing document {}", documentId);
                 processDocumentWithGATE(docData, controller);
-                log.debug("exporting results for document " + documentId);
+                log.debug("exporting results for document {}", documentId);
                 exportResults(docData);
                 reportSuccess(docData);
-                log.debug("document " + documentId + " processed successfully");
+                log.debug("document {} processed successfully", documentId);
               }
               finally {
                 if(docData != null && docData.document != null) {
@@ -243,19 +243,19 @@ public class PooledDocumentProcessor implements DocumentProcessor {
     try {
       while((dd = stream.nextDocument()) != null && !isInterrupted()) {
         final DocumentData docData = dd;
-        log.debug("Loaded document " + dd.id);
+        log.debug("Loaded document {}", dd.id);
         final CorpusController controller = appPool.take();
         if(controller != null) {
           Runnable r = new Runnable() {
             public void run() {
               try {
                 try {
-                  log.debug("processing document " + docData.id);
+                  log.debug("processing document {}", docData.id);
                   processDocumentWithGATE(docData, controller);
-                  log.debug("exporting results for document " + docData.id);
+                  log.debug("exporting results for document {}", docData.id);
                   exportResults(docData);
                   reportSuccess(docData);
-                  log.debug("document " + docData.id + " processed successfully");
+                  log.debug("document {} processed successfully", docData.id);
                 }
                 finally {
                   if(docData != null && docData.document != null) {
@@ -297,7 +297,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
   /**
    * Process the given document with a GATE application from the pool.
    * 
-   * @param doc the document to process
+   * @param docData the document to process
    * @throws GateException if an error occurs during processing.
    */
   private void processDocumentWithGATE(DocumentData docData, CorpusController controller)
@@ -329,9 +329,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
    * Export the results of processing for the given document as
    * specified by the configured output definitions.
    * 
-   * @param doc the processed document
-   * @param documentId the ID of the document, used to generate the output file
-   * names.
+   * @param docData the processed document
    * @throws GateException if an error occurs during export.
    */
   private void exportResults(DocumentData docData) throws IOException, GateException,
@@ -345,7 +343,7 @@ public class PooledDocumentProcessor implements DocumentProcessor {
    * Report successful processing of the given document, including
    * statistics calculated from the annotations on the document.
    * 
-   * @param doc the processed document
+   * @param docData the processed document
    * @throws GateException if an error occurs generating statistics.
    */
   private void reportSuccess(DocumentData docData) throws GateException {

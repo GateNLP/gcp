@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{ISO8601} [GCP \(%t\)] %-5p %c{15}.%M\(%L\) | %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="gate.cloud.util.GateResourcePool" level="INFO"/>
+    <logger name="gate.cloud" level="INFO"/>
+    <root level="INFO">
+        <appender-ref ref="stdout"/>
+    </root>
+</configuration>

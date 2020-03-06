@@ -43,8 +43,6 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import org.apache.log4j.Logger;
-
 /**
  * A {@link Batch} implementation that reads its data from an XML source.
  */
@@ -54,25 +52,15 @@ public class XMLBatchParser{
     XMLInputFactory.newInstance();
 
   /**
-   * Log4J logger.
-   */
-  private static Logger logger = Logger.getLogger(XMLBatchParser.class);
-  
-  /**
-   * @param inputStream
-   * @return
-   * @throws XMLStreamException
-   * @throws FactoryConfigurationError
+   * Load a batch definition from an XML file.
+   *
+   * @param inputFile the file to load
+   * @return the parsed batch definition
    * @throws GateException
    *           if the provided XML data cannot be parsed correctly.
-   * @throws IOException
-   * @throws IllegalAccessException
-   * @throws InstantiationException
-   * @throws ClassNotFoundException
    */
   public static Batch fromXml(File inputFile) throws XMLStreamException,
-          FactoryConfigurationError, GateException, ClassNotFoundException,
-          InstantiationException, IllegalAccessException, IOException {
+          FactoryConfigurationError, GateException, IOException {
     Batch batch = new Batch();
     // gather the input and output handler specifications but don't
     // attempt to instantiate the handlers until after parsing has

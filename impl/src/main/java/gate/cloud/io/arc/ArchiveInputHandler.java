@@ -46,11 +46,12 @@ import org.apache.commons.httpclient.util.DateUtil;
 import org.apache.commons.httpclient.ChunkedInputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.log4j.Logger;
 import org.archive.io.ArchiveReader;
 import org.archive.io.ArchiveRecord;
 import org.archive.io.ArchiveRecordHeader;
 import org.archive.util.ArchiveUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An input handler that reads from a web archive (ARC or WARC) file.
@@ -75,7 +76,7 @@ import org.archive.util.ArchiveUtils;
  */
 public abstract class ArchiveInputHandler implements InputHandler {
   
-  private static final Logger logger = Logger.getLogger(ArchiveInputHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(ArchiveInputHandler.class);
   
   private static final String ARC_HEADER_PREFIX = "arc_header_";
 
@@ -334,7 +335,7 @@ public abstract class ArchiveInputHandler implements InputHandler {
           docFeatures.put("archive_position", posStr);    
         } catch(NumberFormatException e) {
           // log and ignore
-          logger.warn("Invalid record position value (not an integer number): " +
+          logger.warn("Invalid record position value (not an integer number): {}",
           posStr);
         }
       }

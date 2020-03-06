@@ -18,11 +18,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Logger;
-
 import gate.cloud.batch.DocumentID;
 import gate.cloud.io.file.SimpleNamingStrategy;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A naming strategy to convert document IDs suitable for use with
@@ -52,7 +52,7 @@ import gate.util.GateException;
  */
 public class ARCDocumentNamingStrategy extends SimpleNamingStrategy {
   
-  private static final Logger logger = Logger.getLogger(ARCDocumentEnumerator.class); 
+  private static final Logger logger = LoggerFactory.getLogger(ARCDocumentEnumerator.class);
   
   protected String pattern;
   
@@ -133,7 +133,7 @@ public class ARCDocumentNamingStrategy extends SimpleNamingStrategy {
       try {
         idNum = Long.parseLong(posStr);
       } catch (NumberFormatException e) {
-        logger.warn("Invalid record position value (not an integer number): " +
+        logger.warn("Invalid record position value (not an integer number): {}",
             posStr);
       }
     }

@@ -18,12 +18,12 @@ import gate.cloud.batch.DocumentID;
 import gate.cloud.io.OutputHandler;
 import gate.util.Benchmark;
 import gate.util.GateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
 
 /**
  * An {@link OutputHandler} that writes GATE Documents to files using
@@ -33,7 +33,7 @@ import org.apache.log4j.Logger;
  */
 public class SerializedObjectOutputHandler extends AbstractFileOutputHandler {
 
-  private static final Logger logger = Logger.getLogger(SerializedObjectOutputHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(SerializedObjectOutputHandler.class);
   
   @Override
   protected void configImpl(Map<String, String> configData) throws IOException,
@@ -43,8 +43,8 @@ public class SerializedObjectOutputHandler extends AbstractFileOutputHandler {
       configData.put(PARAM_FILE_EXTENSION, ".ser");
     }
     if(configData.containsKey(PARAM_ENCODING)) {
-      logger.warn(this.getClass().getName() + " does not support the "
-              + PARAM_ENCODING + " parameter - ignored");
+      logger.warn("{} does not support the {} parameter - ignored",
+              this.getClass().getName(), PARAM_ENCODING);
     }
     super.configImpl(configData);
   }

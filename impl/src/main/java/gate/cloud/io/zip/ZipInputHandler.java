@@ -36,9 +36,10 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.log4j.Logger;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Input handler that reads from a zip file. Document IDs are assumed to
@@ -46,7 +47,7 @@ import org.apache.tools.zip.ZipFile;
  */
 public class ZipInputHandler implements InputHandler {
 
-  private static Logger logger = Logger.getLogger(ZipInputHandler.class);
+  private static Logger logger = LoggerFactory.getLogger(ZipInputHandler.class);
 
   /**
    * The mime type used when loading documents.
@@ -175,7 +176,7 @@ public class ZipInputHandler implements InputHandler {
         params.put(Document.DOCUMENT_REPOSITIONING_PARAMETER_NAME, Boolean.TRUE);
       }
 
-      logger.debug("Loading document from URL " + docUrl);
+      logger.debug("Loading document from URL {}", docUrl);
 
       DocumentData docData = new DocumentData(
               (Document)Factory.createResource("gate.corpora.DocumentImpl",

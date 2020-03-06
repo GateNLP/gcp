@@ -61,13 +61,12 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 
 import com.sun.jna.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static gate.cloud.io.IOConstants.PARAM_BATCH_FILE_LOCATION;
-
-import gate.cloud.io.ListDocumentEnumerator;
 
 import static gate.cloud.io.IOConstants.PARAM_COMPRESSION;
 import static gate.cloud.io.IOConstants.PARAM_DOCUMENT_ROOT;
@@ -79,8 +78,6 @@ import static gate.cloud.io.IOConstants.VALUE_COMPRESSION_NONE;
 import static gate.cloud.io.IOConstants.VALUE_COMPRESSION_SNAPPY;
 import static gate.cloud.io.ListDocumentEnumerator.PARAM_FILE_NAME;
 
-import gate.cloud.io.file.JSONOutputHandler;
-
 import static gate.cloud.io.file.JSONOutputHandler.PARAM_ANNOTATION_TYPE_PROPERTY;
 import static gate.cloud.io.file.JSONOutputHandler.PARAM_GROUP_ENTITIES_BY;
 
@@ -89,7 +86,7 @@ import static gate.cloud.io.file.JSONOutputHandler.PARAM_GROUP_ENTITIES_BY;
  * specified by a {@link Batch} object.
  */
 public class BatchRunner {
-  private static final Logger log = Logger.getLogger(BatchRunner.class);
+  private static final Logger log = LoggerFactory.getLogger(BatchRunner.class);
   //private static final long LOOP_WAIT = 5 * 60 * 1000;
   private static final long LOOP_WAIT = 10 * 1000;
 
@@ -178,10 +175,10 @@ public class BatchRunner {
         processor.init();
         log.info("Duplication finished");
         System.gc();
-        log.info("Total allocated memory: " + (runtime.totalMemory() / MB) + "M");
-        log.info("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / MB) + "M");
+        log.info("Total allocated memory: {}M", runtime.totalMemory() / MB);
+        log.info("Used memory: {}M", (runtime.totalMemory() - runtime.freeMemory()) / MB);
         duplicationFinishedTime = System.currentTimeMillis();
-        log.info("Duplication time (seconds): " + (duplicationFinishedTime - loadingFinishedTime) / 1000.0);
+        log.info("Duplication time (seconds): {}", (duplicationFinishedTime - loadingFinishedTime) / 1000.0);
         jobPusher = new Thread(new Runnable() {
           public void run() {
             if(batch.getDocumentIDs() == null && inputHandler instanceof StreamingInputHandler) {
@@ -359,8 +356,7 @@ public class BatchRunner {
    * is to monitor the running jobs, collect process results, save the report
    * files for each running batch, and shutdown the batch runner and/or Java
    * process when all the batches have completed (if requested via the
-   * {@link BatchRunner#shutdownWhenFinished(boolean)} and
-   * {@link BatchRunner#exitWhenFinished(boolean)} methods).
+   * {@link BatchRunner#exitWhenFinished(boolean)} method).
    */
   private class JobMonitor implements Runnable {
     public void run() {
@@ -467,13 +463,13 @@ public class BatchRunner {
     long processingFinishedTime = System.currentTimeMillis();
     log.info("Processing finished");
     System.gc();
-    log.info("Total allocated memory: " + (runtime.totalMemory() / MB) + "M");
-    log.info("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / MB) + "M");
+    log.info("Total allocated memory: {}M", runtime.totalMemory() / MB);
+    log.info("Used memory: {}M", (runtime.totalMemory() - runtime.freeMemory()) / MB);
     // if we did not need to process anything then the duplicationFinishedTime will not have
     // been set and be 0. In that case, set it to the loadingFinishedTime
     if(duplicationFinishedTime == 0) duplicationFinishedTime = loadingFinishedTime;
-    log.info("Processing time (seconds): " + (processingFinishedTime - duplicationFinishedTime) / 1000.0);
-    log.info("Total time (seconds): " + (processingFinishedTime - startTime) / 1000.0);
+    log.info("Processing time (seconds): {}", (processingFinishedTime - duplicationFinishedTime) / 1000.0);
+    log.info("Total time (seconds): {}", (processingFinishedTime - startTime) / 1000.0);
   }
 
   /**
@@ -588,7 +584,7 @@ public class BatchRunner {
     try {
       line = parser.parse(options, args);
     } catch(Exception ex) {
-      log.error("Could not parse command line arguments: " + ex.getMessage());
+      log.error("Could not parse command line arguments: {}", ex.getMessage());
       System.exit(1);
     }
     String[] nonOptionArgs = line.getArgs();
@@ -596,11 +592,11 @@ public class BatchRunner {
       numThreads = Integer.parseInt(nonOptionArgs[0]);
       batchFile = new File(nonOptionArgs[1]);
       if(!batchFile.exists()) {
-        log.error("The provided file (" + batchFile + ") does not exist!");
+        log.error("The provided file ({}) does not exist!", batchFile);
         System.exit(1);
       }
       if(!batchFile.isFile()) {
-        log.error("The provided file (" + batchFile + ") is not a file!");
+        log.error("The provided file ({}) is not a file!", batchFile);
         System.exit(1);
       }
     } else {
@@ -635,7 +631,7 @@ public class BatchRunner {
       try {
         batchFile = batchFile.getCanonicalFile();
       } catch(IOException ex) {
-        log.error("Could not get canonical file name for " + batchFile + ": " + ex.getMessage());
+        log.error("Could not get canonical file name for {}: {}", batchFile, ex.getMessage());
         System.exit(1);
       }
     }
@@ -665,7 +661,7 @@ public class BatchRunner {
       }
     }
     File gcpHome = new File(System.getProperty("gcp.home", "."));
-    log.info("Using GCP home directory " + gcpHome);
+    log.info("Using GCP home directory {}", gcpHome);
 
     // exit the whole GCP process if an Error (such as OOM) occurs, rather than
     // just killing the thread in which the error occurred.
@@ -687,9 +683,9 @@ public class BatchRunner {
     });
 
     System.gc();
-    log.info("Processors available: " + runtime.availableProcessors());
-    log.info("Initial total allocated memory: " + (runtime.totalMemory() / MB) + "M");
-    log.info("Initial used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / MB) + "M");
+    log.info("Processors available: {}", runtime.availableProcessors());
+    log.info("Initial total allocated memory: {}M", runtime.totalMemory() / MB);
+    log.info("Initial used memory: {}M", (runtime.totalMemory() - runtime.freeMemory()) / MB);
 
     try {
       Gate.runInSandbox(false);
@@ -714,7 +710,7 @@ public class BatchRunner {
       String[] cacheDirs = line.getOptionValues('C');
       if(cacheDirs != null) {
         for(String dir : cacheDirs) {
-          log.info("Using Maven cache at " + dir);
+          log.info("Using Maven cache at {}", dir);
           gate.util.maven.Utils.addCacheDirectory(new File(dir));
         }
       }
@@ -731,7 +727,7 @@ public class BatchRunner {
             Matcher m = mavenPluginPattern.matcher(plugin);
             if(m.matches()) {
               // this looks like a Maven plugin
-              log.info("Loading Maven plugin " + plugin);
+              log.info("Loading Maven plugin {}", plugin);
               Gate.getCreoleRegister().registerPlugin(new Plugin.Maven(m.group(1), m.group(2), m.group(3)));
             } else {
               try {
@@ -877,11 +873,11 @@ public class BatchRunner {
           String enumeratorClassName = null;
           configData = new HashMap<String, String>();
           if(fileOrDirFile.isDirectory()) {
-            log.info("Enumerating all file IDs in directory: " + fileOrDirFile.getAbsolutePath());
+            log.info("Enumerating all file IDs in directory: {}", fileOrDirFile.getAbsolutePath());
             enumeratorClassName = "gate.cloud.io.file.FileDocumentEnumerator";
             configData.put(PARAM_DOCUMENT_ROOT, line.getOptionValue('i'));
           } else {
-            log.info("Reading file IDs from file: " + fileOrDirFile.getAbsolutePath());
+            log.info("Reading file IDs from file: {}", fileOrDirFile.getAbsolutePath());
             enumeratorClassName = "gate.cloud.io.ListDocumentEnumerator";
             configData.put(PARAM_BATCH_FILE_LOCATION, new File(".").getAbsolutePath());
             configData.put(PARAM_FILE_NAME, fileOrDir);
@@ -902,17 +898,17 @@ public class BatchRunner {
             // log.info("Adding document: "+id);
             docIds.add(id);
           }
-          log.info("Number of documents found: " + docIds.size());
+          log.info("Number of documents found: {}", docIds.size());
           aBatch.setDocumentIDs(docIds.toArray(new DocumentID[docIds.size()]));
           aBatch.init();
         }
       }
       log.info("Loading finished");
-      log.info("Total allocated memory: " + (runtime.totalMemory() / MB) + "M");
-      log.info("Used memory: " + ((runtime.totalMemory() - runtime.freeMemory()) / MB) + "M");
+      log.info("Total allocated memory: {}M", runtime.totalMemory() / MB);
+      log.info("Used memory: {}M", (runtime.totalMemory() - runtime.freeMemory()) / MB);
       loadingFinishedTime = System.currentTimeMillis();
-      log.info("Loading time (seconds): " + (loadingFinishedTime - startTime) / 1000.0);
-      log.info("Launching batch:\n" + aBatch);
+      log.info("Loading time (seconds): {}", (loadingFinishedTime - startTime) / 1000.0);
+      log.info("Launching batch:\n{}", aBatch);
 
       installSignalHandler(instance);
 
