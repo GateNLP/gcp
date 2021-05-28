@@ -11,7 +11,7 @@
   <parent>
     <groupId>uk.ac.gate</groupId>
     <artifactId>gcp-parent</artifactId>
-    <version>3.2-SNAPSHOT</version>
+    <version>3.2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -30,7 +30,7 @@
     <dependency>
       <groupId>uk.ac.gate</groupId>
       <artifactId>gcp-api</artifactId>
-      <version>3.2-SNAPSHOT</version>
+      <version>3.2</version>
       <scope>compile</scope>
     </dependency>
 
