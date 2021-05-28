@@ -134,6 +134,18 @@ thread.
 
 This section summarises the main changes between releases of GCP
 
+\subsection{3.2 (May 2021)}
+
+Underlying GATE Embedded version is now 9.0.1.  This means that all logging
+within GCP has been switched from Log4J to SLF4J in line with the same change
+in GATE Embedded; if you have edited the default logging configuration you
+will need to port your changes to Logback format.
+
+\subsection{3.1.1 (January 2020)}
+
+The only change in this release is to upgrade the GATE Embedded version to
+8.6.1.
+
 \subsection{3.1 (June 2019)}
 
 Underlying GATE Embedded version is now 8.6.  Also upgraded commons-compress
