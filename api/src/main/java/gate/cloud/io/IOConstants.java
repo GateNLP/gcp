@@ -171,6 +171,31 @@ public class IOConstants {
    * streamed JSON object.
    */
   public static final String PARAM_ID_POINTER = "idPointer";
+
+  /**
+   * <p>
+   * Template allowing the document ID to be built up from multiple values
+   * from a streamed JSON object.  For example
+   * <code>idTemplate="{/channel}_{/index}"</code>
+   * would generate an ID by taking the top level "channel" and "index"
+   * properties from the JSON and combining them with an underscore separator.
+   * Multiple alternative templates can be separated by | and will be tried
+   * one by one from left to right, the first template for which every
+   * placeholder resolves successfully will be used.  So for example
+   * <code>idTemplate="{/channel}_{/index}|{/group}_{/index}"</code> would
+   * use the channel and index to form the ID if the JSON object has a
+   * channel key, or the group and index if it does not have a channel, and
+   * skip the document if it has neither channel nor group.
+   * </p>
+   *
+   * <p>
+   * Since JSON property names may contain brace or pipe characters, these
+   * may be escaped as ~2 (for closing brace "}") and ~3 (for pipe "|"),
+   * analagous to the way / and ~ are escaped as ~1 and ~0 in the JSON
+   * Pointer language.
+   * </p>
+   */
+  public static final String PARAM_ID_TEMPLATE = "idTemplate";
   
   /**
    * Target size for a single output file from a streaming output handler.

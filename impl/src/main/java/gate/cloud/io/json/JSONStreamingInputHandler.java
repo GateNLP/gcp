@@ -14,6 +14,7 @@ package gate.cloud.io.json;
 import static gate.cloud.io.IOConstants.PARAM_BATCH_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_COMPRESSION;
 import static gate.cloud.io.IOConstants.PARAM_ID_POINTER;
+import static gate.cloud.io.IOConstants.PARAM_ID_TEMPLATE;
 import static gate.cloud.io.IOConstants.PARAM_MIME_TYPE;
 import static gate.cloud.io.IOConstants.PARAM_SOURCE_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.VALUE_COMPRESSION_GZIP;
@@ -35,8 +36,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -59,9 +65,9 @@ import org.slf4j.LoggerFactory;
  * of top-level JSON objects concatenated together. This is the typical
  * format returned by social media streams from Twitter or DataSift.
  * Each JSON object will be treated as a GATE document, with the
- * document ID taken from a property in the JSON (the path to the ID
- * property is a configuration option). Objects for which the ID cannot
- * be found will be ignored.
+ * document ID taken from a property or properties in the JSON (the path
+ * to the ID property is a configuration option). Objects for which the
+ * ID cannot be found or constructed will be ignored.
  * </p>
  * <p>
  * The input file may be compressed. The following values of the
@@ -143,11 +149,11 @@ public class JSONStreamingInputHandler implements StreamingInputHandler {
   protected String mimeType;
 
   /**
-   * JSON Pointer expression to find the item in the JSON node tree that
-   * represents the document identifier. E.g. "/id_str" for Twitter JSON
-   * or "/interaction/id" for DataSift.
+   * Function that extracts a document ID from a given JSON node.  The
+   * function is derived from the idPointer/idTemplate specified in
+   * configuration.
    */
-  protected JsonPointer idPointer;
+  protected Function<JsonNode, String> idExtractor;
 
   /**
    * Document IDs that are already complete after a previous run of this
@@ -196,16 +202,91 @@ public class JSONStreamingInputHandler implements StreamingInputHandler {
 
     // idPointer
     String idPointerStr = configData.get(PARAM_ID_POINTER);
-    if(idPointerStr == null) {
-      throw new IllegalArgumentException("Parameter " + PARAM_ID_POINTER
-              + " is required");
+    String idTemplateStr = configData.get(PARAM_ID_TEMPLATE);
+    if(idPointerStr == null && idTemplateStr == null) {
+      throw new IllegalArgumentException("One of " + PARAM_ID_POINTER
+              + " or " + PARAM_ID_TEMPLATE + " is required");
     }
-    idPointer = JsonPointer.compile(idPointerStr);
+    if(idPointerStr != null) {
+      JsonPointer idPointer = JsonPointer.compile(idPointerStr);
+      idExtractor = (node) -> node.at(idPointer).asText();
+    } else {
+      idExtractor = compileIdTemplate(idTemplateStr);
+    }
 
     // compression
     compression = configData.get(PARAM_COMPRESSION);
     // mime type
     mimeType = configData.get(PARAM_MIME_TYPE);
+  }
+
+  /**
+   * Compile an idTemplate string into a function that takes a JsonNode representing
+   * a document and returns a String representing its identifier.  The template string
+   * is expected to be a series of alternatives separated by pipe characters (|), each
+   * alternative is a string containing one or more brace expressions {...} which
+   * will be treated as JSON Pointer expressions and replaced with the relevant value
+   * extracted from that position in the document JSON.  The alternatives are tried one
+   * by one from left to right, the first alternative for which all the pointer
+   * expressions resolve to non-null string/number/boolean values will be used to
+   * generate the final ID.  If no alternative can be fully resolved, the function
+   * returns a null ID, which will cause the document to be skipped.
+   *
+   * @param template the template string
+   * @return an extractor function
+   * @throws IllegalArgumentException if any of the brace expressions fails to parse
+   * as a JSON Pointer.
+   */
+  protected static Function<JsonNode, String> compileIdTemplate(String template) {
+    Pattern placeholderPattern = Pattern.compile("\\{([^}]+)}");
+    // Start with an initial function that always returns null, so we don't
+    // have to make a special case for the last alternative in the logic below
+    Function<JsonNode, String> fn = (node) -> null;
+    String[] alternatives = template.split(Pattern.quote("|"));
+    // process the segments from right to left, so the function
+    // for each one can chain to the next
+    for(int j = alternatives.length - 1; j >= 0; j--) {
+      String tmpl = alternatives[j];
+      final List<String> fixedStrings = new ArrayList<>();
+      final List<JsonPointer> pointers = new ArrayList<>();
+      Matcher m = placeholderPattern.matcher(tmpl);
+      // sanity check on the template
+      if(!m.find()) {
+        throw new IllegalArgumentException("idTemplate must include at least one pointer in every alternative");
+      }
+      // now reset and start the actual compilation
+      m.reset();
+      int lastIndex = 0;
+      while(m.find()) {
+        fixedStrings.add(tmpl.substring(lastIndex, m.start()));
+        // unescape any } and | inside the {...} to get the actual pointer expression
+        String ptr = m.group(1).replace("~3", "|")
+                .replace("~2", "}");
+        pointers.add(JsonPointer.compile(ptr));
+        lastIndex = m.end();
+      }
+      final String tail = tmpl.substring(lastIndex);
+
+      final Function<JsonNode, String> nextFn = fn;
+      fn = (node) -> {
+        StringBuilder str = new StringBuilder();
+        for(int i = 0; i < pointers.size(); i++) {
+          str.append(fixedStrings.get(i));
+          JsonNode target = node.at(pointers.get(i));
+          if(!target.isValueNode() || target.isNull()) {
+            // pointer either did not find anything at all, or it found null, an
+            // object or an array (which cannot be sensibly converted to string).
+            // Give up and try the next alternative, if any.
+            return nextFn.apply(node);
+          }
+          str.append(target.asText());
+        }
+        str.append(tail);
+        return str.toString();
+      };
+    }
+
+    return fn;
   }
 
   public void startBatch(Batch b) {
@@ -302,7 +383,7 @@ public class JSONStreamingInputHandler implements StreamingInputHandler {
   public DocumentData nextDocument() throws IOException, GateException {
     while(docIterator.hasNextValue()) {
       JsonNode json = docIterator.nextValue();
-      String id = json.at(idPointer).asText();
+      String id = idExtractor.apply(json);
       if(id == null || "".equals(id)) {
         // can't find an ID, assume this is a "delete" or similar and
         // ignore it
