@@ -97,6 +97,10 @@ jobs:
 
 
       # Only do the deply and distro if we're in the main GateNLP repo, not a fork
+      - name: Deploy parent POM to repo.gate.ac.uk
+        if: github.repository == 'GateNLP/gcp' && github.ref == 'refs/heads/master'
+        run: mvn --batch-mode -e -Dmaven.test.skip=true -N deploy
+
       - name: Deploy api to repo.gate.ac.uk
         if: github.repository == 'GateNLP/gcp' && github.ref == 'refs/heads/master'
         working-directory: ./api
