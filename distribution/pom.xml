@@ -61,4 +61,19 @@
     </dependency>
   </dependencies>
 
+  <distributionManagement>
+    <repository>
+      <id>gate-oss</id>
+      <name>Sonatype OSS staging</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <layout>default</layout>
+    </repository>
+    <snapshotRepository>
+      <id>gate.snapshots</id>
+      <name>GATE Snapshots Repository</name>
+      <url>https://repo.gate.ac.uk/content/repositories/snapshots</url>
+      <layout>default</layout>
+    </snapshotRepository>
+  </distributionManagement>
+
 </project>
