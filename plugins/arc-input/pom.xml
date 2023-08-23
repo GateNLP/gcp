@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>uk.ac.gate</groupId>
+  <artifactId>gcp-plugin-arc-input</artifactId>
+  <version>3.3-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <url>http://gate.ac.uk/gcp</url>
+
+  <name>GATE Cloud Paralleliser (ARC/WARC input plugin)</name>
+
+  <description>
+  GCP is a tool for running saved GATE applications in multiple parallel
+  threads on a single machine.
+  </description>
+
+  <build>
+    <plugins>
+      <!-- Disable deployment of this module to repositories, as we only use it for its assembly -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.7</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <!-- Add a Class-Path to the JAR manifest, so creole.xml only has to refer to the main JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <id>distro-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/assembly/distro.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>uk.ac.gate</groupId>
+      <artifactId>gcp-impl</artifactId>
+      <version>3.3-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Heritrix library for parsing ARC and WARC files -->
+    <dependency>
+      <groupId>org.netpreserve.commons</groupId>
+      <artifactId>webarchive-commons</artifactId>
+      <version>1.1.9</version>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--
+    We should get this as a transitive of gate-core, but heritrix-commons also
+    declares a dependency on an earlier version, and Maven prefers this as it
+    is closer to the root of the dependency tree.
+    -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.7</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>3.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>

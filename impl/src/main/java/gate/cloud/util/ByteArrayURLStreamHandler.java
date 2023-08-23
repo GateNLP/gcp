@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.httpclient.Header;
-
 /**
  * This oddity is just a wrapper around a byte array and a URL, to
  * allow creation of GATE documents from a byte array with 
@@ -28,10 +26,36 @@ import org.apache.commons.httpclient.Header;
  */
 public class ByteArrayURLStreamHandler
     extends URLStreamHandler   {
+
+  public static class Header {
+    public Header(String name, String value) {
+      this.name = name;
+      this.value = value;
+    }
+
+    private String name;
+    private String value;
+
+    public String getName() {
+      return name;
+    }
+
+    public void setName(String name) {
+      this.name = name;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    public void setValue(String value) {
+      this.value = value;
+    }
+  }
   
   private byte[] data;
   private Header[] headers;
-  
+
   public ByteArrayURLStreamHandler(byte[] data) {
     this(data, null);
   }
@@ -78,7 +102,7 @@ public class ByteArrayURLStreamHandler
           } else if(values.size() == 1) {
             values = new ArrayList<String>(values);
             values.add(h.getValue());
-            fields.put(h.getName(), values);            
+            fields.put(h.getName(), values);
           } else {
             values.add(h.getValue());
           }
