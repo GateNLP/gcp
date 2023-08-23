@@ -299,8 +299,14 @@ public abstract class ArchiveInputHandler implements InputHandler {
         chunkIn.close();
         content = baos.toByteArray();
       }
-      
-      URL docUrl = new URL(null, header.getUrl(), new ByteArrayURLStreamHandler(content, httpHeaders));
+      ByteArrayURLStreamHandler.Header[] handlerHeaders = null;
+      if(httpHeaders != null) {
+        handlerHeaders = new ByteArrayURLStreamHandler.Header[httpHeaders.length];
+        for(int i = 0; i < httpHeaders.length; i++) {
+          handlerHeaders[i] = new ByteArrayURLStreamHandler.Header(httpHeaders[i].getName(), httpHeaders[i].getValue());
+        }
+      }
+      URL docUrl = new URL(null, header.getUrl(), new ByteArrayURLStreamHandler(content, handlerHeaders));
       
       FeatureMap docParams = Factory.newFeatureMap();
       docParams.put(Document.DOCUMENT_URL_PARAMETER_NAME, docUrl);

@@ -4,12 +4,12 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.ac.gate</groupId>
-  <artifactId>gcp-dist</artifactId>
+  <artifactId>gcp-plugin-mimir-output</artifactId>
   <version>3.3-SNAPSHOT</version>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <url>http://gate.ac.uk/gcp</url>
 
-  <name>GATE Cloud Paralleliser (distribution)</name>
+  <name>GATE Cloud Paralleliser (Mimir output plugin)</name>
 
   <description>
   GCP is a tool for running saved GATE applications in multiple parallel
@@ -18,6 +18,29 @@
 
   <build>
     <plugins>
+      <!-- Disable deployment of this module to repositories, as we only use it for its assembly -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.7</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <!-- Add a Class-Path to the JAR manifest, so creole.xml only has to refer to the main JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -43,31 +66,18 @@
   <dependencies>
     <dependency>
       <groupId>uk.ac.gate</groupId>
-      <artifactId>gcp-impl</artifactId>
+      <artifactId>gcp-api</artifactId>
       <version>3.3-SNAPSHOT</version>
+      <scope>provided</scope>
     </dependency>
 
+    <!-- mimir-connector for the Mimir output handler -->
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
+      <groupId>uk.ac.gate.mimir</groupId>
+      <artifactId>mimir-connector</artifactId>
+      <version>6.2</version>
+      <scope>compile</scope>
     </dependency>
-
   </dependencies>
-
-  <distributionManagement>
-    <repository>
-      <id>gate-oss</id>
-      <name>Sonatype OSS staging</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-      <layout>default</layout>
-    </repository>
-    <snapshotRepository>
-      <id>gate.snapshots</id>
-      <name>GATE Snapshots Repository</name>
-      <url>https://repo.gate.ac.uk/content/repositories/snapshots</url>
-      <layout>default</layout>
-    </snapshotRepository>
-  </distributionManagement>
 
 </project>

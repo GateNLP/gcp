@@ -13,6 +13,7 @@ package gate.cloud.io.arc;
 
 import static gate.cloud.io.IOConstants.PARAM_ARC_FILE_LOCATION;
 import static gate.cloud.io.IOConstants.PARAM_SOURCE_FILE_LOCATION;
+
 import gate.util.GateException;
 
 import java.io.ByteArrayInputStream;

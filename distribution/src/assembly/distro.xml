@@ -1,6 +1,6 @@
-<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 https://maven.apache.org/xsd/assembly-2.2.0.xsd">
   <id>distro</id>
   <formats>
     <format>zip</format>
@@ -36,13 +36,32 @@
       <useProjectArtifact>false</useProjectArtifact>
       <unpack>false</unpack>
     </dependencySet>
-    <dependencySet>
-      <scope>provided</scope>
-      <outputDirectory></outputDirectory>
-      <useProjectArtifact>false</useProjectArtifact>
-      <unpack>false</unpack>
-      <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-    </dependencySet>
   </dependencySets>
 
+  <moduleSets>
+    <moduleSet>
+      <useAllReactorProjects>true</useAllReactorProjects>
+      <includes>
+        <include>uk.ac.gate:gcp-cli</include>
+      </includes>
+      <binaries>
+        <outputDirectory></outputDirectory>
+        <unpack>false</unpack>
+        <includeDependencies>false</includeDependencies>
+        <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
+      </binaries>
+    </moduleSet>
+    <moduleSet>
+      <useAllReactorProjects>true</useAllReactorProjects>
+      <includes>
+        <include>uk.ac.gate:gcp-plugin-*</include>
+      </includes>
+      <binaries>
+        <attachmentClassifier>distro</attachmentClassifier>
+        <includeDependencies>false</includeDependencies>
+        <unpack>true</unpack>
+        <outputDirectory>plugins</outputDirectory>
+      </binaries>
+    </moduleSet>
+  </moduleSets>
 </assembly>

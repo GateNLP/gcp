@@ -717,6 +717,17 @@ public class BatchRunner {
 
       Gate.init();
 
+      // load built-in plugins
+      File builtInPluginsDir = new File(gcpHome, "plugins");
+      if(builtInPluginsDir.isDirectory()) {
+        File[] plugins = builtInPluginsDir.listFiles(File::isDirectory);
+        if(plugins != null) {
+          for(File pluginFile : plugins) {
+            Gate.getCreoleRegister().registerPlugin(new Plugin.Directory(pluginFile.toURI().toURL()));
+          }
+        }
+      }
+
       // load any other plugins specified on the command line
       String[] pluginsToLoad = line.getOptionValues('p');
       if(pluginsToLoad != null) {

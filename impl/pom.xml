@@ -34,26 +34,6 @@
       <scope>compile</scope>
     </dependency>
 
-    <dependency>
-      <groupId>commons-httpclient</groupId>
-      <artifactId>commons-httpclient</artifactId>
-      <version>3.0.1</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <!-- Heritrix library for parsing ARC and WARC files -->
-    <dependency>
-      <groupId>org.netpreserve.commons</groupId>
-      <artifactId>webarchive-commons</artifactId>
-      <version>1.1.9</version>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <!--
     <dependency>
       <groupId>it.unimi.dsi</groupId>
@@ -76,26 +56,6 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-compress</artifactId>
       <version>1.21</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <!-- mimir-connector for the Mimir output handler -->
-    <dependency>
-      <groupId>uk.ac.gate.mimir</groupId>
-      <artifactId>mimir-connector</artifactId>
-      <version>6.2</version>
-      <scope>compile</scope>
-    </dependency>
-
-    <!--
-    We should get this as a transitive of gate-core, but heritrix-commons also
-    declares a dependency on an earlier version, and Maven prefers this as it
-    is closer to the root of the dependency tree.
-    -->
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.7</version>
       <scope>compile</scope>
     </dependency>
 
