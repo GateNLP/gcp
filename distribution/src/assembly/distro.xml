@@ -36,26 +36,17 @@
       <useProjectArtifact>false</useProjectArtifact>
       <unpack>false</unpack>
     </dependencySet>
+    <dependencySet>
+      <scope>provided</scope>
+      <outputDirectory></outputDirectory>
+      <useProjectArtifact>false</useProjectArtifact>
+      <unpack>false</unpack>
+      <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
+    </dependencySet>
   </dependencySets>
 
   <moduleSets>
     <moduleSet>
-      <useAllReactorProjects>true</useAllReactorProjects>
-      <includes>
-        <include>uk.ac.gate:gcp-cli</include>
-      </includes>
-      <binaries>
-        <outputDirectory></outputDirectory>
-        <unpack>false</unpack>
-        <includeDependencies>false</includeDependencies>
-        <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-      </binaries>
-    </moduleSet>
-    <moduleSet>
-      <useAllReactorProjects>true</useAllReactorProjects>
-      <includes>
-        <include>uk.ac.gate:gcp-plugin-*</include>
-      </includes>
       <binaries>
         <attachmentClassifier>distro</attachmentClassifier>
         <includeDependencies>false</includeDependencies>

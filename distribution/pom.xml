@@ -16,6 +16,11 @@
   threads on a single machine.
   </description>
 
+  <modules>
+    <module>plugins/arc-input</module>
+    <module>plugins/mimir-output</module>
+  </modules>
+
   <build>
     <plugins>
       <plugin>
@@ -53,6 +58,12 @@
       <version>1.2.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>uk.ac.gate</groupId>
+      <artifactId>gcp-cli</artifactId>
+      <version>3.3-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <distributionManagement>

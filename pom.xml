@@ -60,8 +60,6 @@
   <modules>
     <module>api</module>
     <module>impl</module>
-    <module>plugins/arc-input</module>
-    <module>plugins/mimir-output</module>
     <module>cli</module>
     <module>distribution</module>
   </modules>
